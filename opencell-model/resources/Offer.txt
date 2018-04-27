@@ -27,3 +27,45 @@ Charge -> Dsmart Go Aylik Ücreti Indirimi - 20 TL - 24 ay
 
 Service -> Dsmart Modem
 Charge -> Vdsl Modem Aylik Ücreti - 7 TL - 24 ay 
+
+
+**********************************************************
+
+Service -> TV
+Charge -> TV Aktivasyon Ücreti - 1 Ay
+Charge -> TV Aktivasyon Ücreti Indirimi - 1 Ay
+Charge -> TV Kurulum Ücreti - 1 Ay
+Charge -> TV Kurulum Ücreti Indirimi - 1 Ay
+Charge -> TV Aylik Baz Ücreti
+Charge -> TV Aylik Ücreti Indirimi - 24 ay
+
+
+Service -> YALIN INTERNET
+Charge -> Internet Aktivasyon Ücreti - 1 ay 
+Charge -> Internet Aktivasyon Ücreti Indirimi - 1 ay
+Charge -> Internet Kurulum Ücreti - 1 ay
+Charge -> Internet Kurulum Ücreti Indirimi - 1 ay
+Charge -> Yalin Internet Aylik Baz Ücreti
+Charge -> Yalin Internet Aylik Ücreti Indirimi - 24 ay
+Charge -> Internet Aylik Baz Ücreti
+Charge -> Internet Aylik Baz Ücreti Indirimi - 24 ay
+
+
+
+OFFER -> Hos Geldin Paketi + Sinirsiz Fiber 24 Mb 50 Gb Yalin Internet  - 
+
+PricePlan -> PP_$OfferCode_TV Aktivasyon Ücreti - 60 TL 
+PricePlan -> PP_$OfferCode_TV Aktivasyon Ücreti Indirimi - 60 TL 
+PricePlan -> PP_$OfferCode_TV Kurulum Ücreti - 120 TL
+PricePlan -> PP_$OfferCode_TV Kurulum Ücreti Indirimi - 120 TL
+PricePlan -> PP_$OfferCode_TV Aylik Ücreti - 60 TL
+PricePlan -> PP_$OfferCode_TV Aylik Ücreti Indirimi - 30 TL
+
+PricePlan -> PP_$OfferCode_Internet Aktivasyon Ücreti - 192 TL 
+PricePlan -> PP_$OfferCode_Internet Aktivasyon Ücreti Indirimi - 192 TL
+PricePlan -> PP_$OfferCode_Internet Kurulum Ücreti - 200 TL
+PricePlan -> PP_$OfferCode_Internet Kurulum Ücreti Indirimi - 200 TL
+PricePlan -> PP_$OfferCode_Yalin Internet Aylik Baz Ücreti - 15 TL
+PricePlan -> PP_$OfferCode_Yalin Internet Aylik Ücreti Indirimi - 8 TL
+PricePlan -> PP_$OfferCode_Internet Aylik Baz Ücreti  - 63 TL
+PricePlan -> PP_$OfferCode_Internet Aylik Baz Ücreti Indirimi - 30 TL
