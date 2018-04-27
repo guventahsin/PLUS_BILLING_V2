@@ -152,4 +152,10 @@ public class CalendarDaily extends Calendar {
     public boolean truncDateTime() {
         return false;
     }
+
+	@Override
+	public Date previousCalendarDate2(Date date) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

@@ -49,6 +49,10 @@ public class SubscriptionTerminationReason extends BusinessEntity {
     @Type(type = "numeric_boolean")
     @Column(name = "apply_termination_charges")
     private boolean applyTerminationCharges;
+    
+    @Type(type = "numeric_boolean")
+    @Column(name = "apply_agreement_extension")
+    private boolean applyAgreementExtension;
 
     public boolean isApplyAgreement() {
         return applyAgreement;
@@ -72,5 +76,13 @@ public class SubscriptionTerminationReason extends BusinessEntity {
 
     public void setApplyTerminationCharges(boolean applyTerminationCharges) {
         this.applyTerminationCharges = applyTerminationCharges;
+    }
+    
+    public boolean isApplyAgreementExtension() {
+        return applyAgreementExtension;
+    }
+
+    public void setApplyAgreementExtension(boolean applyAgreementExtension) {
+        this.applyAgreementExtension = applyAgreementExtension;
     }
 }

@@ -29,6 +29,41 @@
             selection="#{serviceInstanceBean.entity.subscription}" updateField=":formId:tabView:subscriptionSelectedId :formId:tabView:subscriptionSelectedId_text">
         </hftl:entityPopup>
 
+		<p:dialog id="serviceSuspensionPopup"
+			header="#{messages['serviceTerminationPopup.title']}"
+			widgetVar="dlg_serviceSuspensionPopup"  modal="true" appendTo="@(body)" closeOnEscape="true" width="700" >
+			<p:outputPanel id="suspensionPanel">
+                <p:messages id="suspensionMessages"/>
+				<hftl:formPanel edit="true"
+					backingBean="#{serviceInstanceBean}"
+					entity="#{serviceInstanceBean.entity}"
+					styleClass="formPanel" formId="serviceTermFrm"
+					showFormButtons="false" useCustomIdParam="true">
+
+						<hftl:formField label="#{messages['serviceInstance.code']}"
+							field="code" size="50" edit="false" componentWidth="25"/>
+						<hftl:formField label="#{messages['serviceInstance.terminationReason']}"
+							field="subscriptionTerminationReason" valueLabelField="descriptionOrCode"
+							required="true"  edit="true"
+							listElements="#{subscriptionTerminationReasonService.listReasons()}" />
+
+                        <ui:param name="buttons" value="true"/>
+                        <ui:define name="buttons">                        
+							<p:commandButton action="#{serviceInstanceBean.suspendService()}"
+								value="#{messages['button.suspendButton']}"
+								onclick="if(confirm('#{messages['confirmationMessage.confirmSuspension']}')){return true;}else{return false;}"
+								oncomplete="if (args &amp;&amp; !args.validationFailed) PF('dlg_serviceSuspensionPopup').hide()"
+								update=":formId:tabView"
+								 />
+							<p:commandButton immediate="true"
+								onclick="PF('dlg_serviceSuspensionPopup').hide()" type="button"
+								value="#{messages['management.close']}" />
+						</ui:define>
+
+				</hftl:formPanel>
+			</p:outputPanel>
+		</p:dialog>
+
         <hftl:formPanel label="#{messages['serviceInstance.panel']}" edit="#{serviceInstanceBean.entity.status eq 'INACTIVE' or serviceInstanceBean.entity.status eq 'ACTIVE' or serviceInstanceBean.entity.status eq 'SUSPENDED'}" showEditButton="#{serviceInstanceBean.entity.status eq 'INACTIVE' or serviceInstanceBean.entity.status eq 'ACTIVE' or serviceInstanceBean.entity.status eq 'SUSPENDED'}"  backingBean="#{serviceInstanceBean}" ajaxSubmit="true" submitPartialProcess=":formId:tabView"
                 objectIdParamName="serviceInstanceId" showDeleteButton="#{serviceInstanceBean.entity.status eq 'INACTIVE'}">
 
@@ -69,13 +104,16 @@
 						value="#{messages['serviceInstance.cancelButton']}" ajax="false"
 						onclick="if(confirm('#{messages['confirmationMessage.confirmCancellation']}')){return true;}else{return false;}"
 						disabled="#{serviceInstanceBean.entity.status.toString() != 'ACTIVE'}" />
-					<p:commandButton action="#{serviceInstanceBean.suspendService}"
+					<p:commandButton 
 						value="#{messages['serviceInstance.suspendButton']}" ajax="false"
-						onclick="if(confirm('#{messages['confirmationMessage.confirmSuspension']}')){return true;}else{return false;}"
+						onclick="PF('dlg_serviceSuspensionPopup').show();"
+						type="button"
 						disabled="#{serviceInstanceBean.entity.status.toString() != 'ACTIVE'}" />
 				</h:panelGroup>
 			</ui:define>
 		</hftl:formPanel>
     </ui:define>
+
+
 
 </ui:composition>

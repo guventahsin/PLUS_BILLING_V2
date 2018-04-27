@@ -1623,12 +1623,19 @@ public class InvoiceService extends PersistenceService<Invoice> {
         log.debug("After assignInvoiceNumberFromReserve:" + (System.currentTimeMillis() - startDate));
 
         BillingAccount billingAccount = invoice.getBillingAccount();
-
-        Date initCalendarDate = billingAccount.getSubscriptionDate();
-        if (initCalendarDate == null) {
-            initCalendarDate = billingAccount.getAuditable().getCreated();
+        
+        Date initCalendarDate = null;
+        if (billingAccount.getNextInvoiceDate() == null){
+	         initCalendarDate = billingAccount.getSubscriptionDate();
+	        if (initCalendarDate == null) {
+	            initCalendarDate = billingAccount.getAuditable().getCreated();
+	        }
         }
-        Date nextCalendarDate = billingAccount.getBillingCycle().getNextCalendarDate(initCalendarDate);
+        else{
+        	initCalendarDate = billingAccount.getNextInvoiceDate();
+        }
+
+        Date nextCalendarDate = billingAccount.getBillingCycle().getCalendar().nextPeriodStartDate(initCalendarDate);
         billingAccount.setNextInvoiceDate(nextCalendarDate);
         billingAccount.updateAudit(currentUser);
         invoice = update(invoice);

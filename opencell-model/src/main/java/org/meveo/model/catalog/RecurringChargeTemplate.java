@@ -65,6 +65,9 @@ public class RecurringChargeTemplate extends ChargeTemplate {
 	@JoinColumn(name = "calendar_id")
 	private Calendar calendar;
 
+	@Column(name = "duration_term_in_month_start")
+	private Integer durationTermInMonthStart;
+
 	@Column(name = "duration_term_in_month")
 	private Integer durationTermInMonth;
 
@@ -112,6 +115,14 @@ public class RecurringChargeTemplate extends ChargeTemplate {
 		this.durationTermInMonth = durationTermInMonth;
 	}
 
+	public Integer getDurationTermInMonthStart() {
+		return durationTermInMonthStart;
+	}
+
+	public void setDurationTermInMonthStart(Integer durationTermInMonthStart) {
+		this.durationTermInMonthStart = durationTermInMonthStart;
+	}
+	
 	public Boolean getSubscriptionProrata() {
 		return subscriptionProrata;
 	}

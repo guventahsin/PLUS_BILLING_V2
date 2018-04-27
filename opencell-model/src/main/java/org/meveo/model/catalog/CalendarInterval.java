@@ -554,4 +554,10 @@ public class CalendarInterval extends Calendar {
     public boolean truncDateTime() {
         return intervalType != CalendarIntervalTypeEnum.HOUR;
     }
+
+	@Override
+	public Date previousCalendarDate2(Date date) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

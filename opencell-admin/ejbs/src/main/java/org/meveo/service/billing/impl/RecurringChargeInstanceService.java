@@ -93,7 +93,7 @@ public class RecurringChargeInstanceService extends BusinessService<RecurringCha
             if (isToTruncatedToDate) {
                 qb.addCriterionDateRangeToTruncatedToDay("c.nextChargeDate", maxChargeDate);
             } else {
-                qb.addCriterion("c.nextChargeDate", "<", maxChargeDate, false);
+                qb.addCriterion("c.chargeDate", "<", maxChargeDate, false);
             }
             ids = qb.getIdQuery(getEntityManager()).getResultList();
             log.debug("end of find {} by status (status={}). Result size found={}.", new Object[] { "RecurringChargeInstance", status, (ids != null ? ids.size() : "NULL") });
@@ -253,12 +253,8 @@ public class RecurringChargeInstanceService extends BusinessService<RecurringCha
                 throw new BusinessException("Recurring charge template has no calendar: code=" + recurringChargeTemplate.getCode());
             }
 
-            Date applicationDate = null;
-            // if (recurringChargeTemplate.getApplyInAdvance()) {
-            applicationDate = activeRecurringChargeInstance.getNextChargeDate();
-            // } else {
-            // applicationDate = activeRecurringChargeInstance.getChargeDate();
-            // }
+            Date nextChargeDate = activeRecurringChargeInstance.getNextChargeDate();
+            Date chargeDate = activeRecurringChargeInstance.getChargeDate();
 
             // If we recognize revenue we first delete all SCHEDULED wallet
             // operations
@@ -272,14 +268,13 @@ public class RecurringChargeInstanceService extends BusinessService<RecurringCha
                 }
 
             }
-
-            while (applicationDate != null && nbRating < MaxRecurringRatingHistory && ((applicationDate.getTime() <= maxDate.getTime() && !isStrictlyBeforeMaxDate)
-                    || (applicationDate.getTime() < maxDate.getTime() && isStrictlyBeforeMaxDate))) {
+            
+            while (nextChargeDate != null && nbRating < MaxRecurringRatingHistory && ((nextChargeDate.getTime() <= maxDate.getTime() && !isStrictlyBeforeMaxDate)
+                    || (chargeDate.getTime() < maxDate.getTime() && isStrictlyBeforeMaxDate))) {
                 nbRating++;
-                log.info("applicationDate={}", applicationDate);
-                applicationDate = DateUtils.setTimeToZero(applicationDate);
+                log.info("chargeDate={}", chargeDate);
                 if (!recurringChargeTemplate.getApplyInAdvance()) {
-                    walletOperationService.applyNotAppliedinAdvanceReccuringCharge(activeRecurringChargeInstance, false, recurringChargeTemplate);
+                    walletOperationService.applyNotAppliedinAdvanceReccuringCharge(activeRecurringChargeInstance, false, recurringChargeTemplate, null);
                 } else {
                     walletOperationService.applyReccuringCharge(activeRecurringChargeInstance, false, recurringChargeTemplate, false);
                 }
@@ -288,12 +283,8 @@ public class RecurringChargeInstanceService extends BusinessService<RecurringCha
 
                 log.debug("chargeDate {}, nextChargeDate {}, wo size {}", activeRecurringChargeInstance.getChargeDate(), activeRecurringChargeInstance.getNextChargeDate(),
                     activeRecurringChargeInstance.getWalletOperations().size());
-                // if (recurringChargeTemplate.getApplyInAdvance()) {
-                applicationDate = activeRecurringChargeInstance.getNextChargeDate();
-                // } else {
-                // applicationDate =
-                // activeRecurringChargeInstance.getChargeDate();
-                // }
+                
+                nextChargeDate = activeRecurringChargeInstance.getNextChargeDate();
             }
             if (nbRating > 0) {
                 updateNoCheck(activeRecurringChargeInstance);
@@ -306,19 +297,18 @@ public class RecurringChargeInstanceService extends BusinessService<RecurringCha
                 if (endContractDate == null) {
                     log.error("error while trying to schedule revenue for chargeInstance {}," + " the subscription has no end agreeement date", chargeInstanceId);
                 } else {
-                    Date chargeDate = activeRecurringChargeInstance.getChargeDate();
-                    Date nextChargeDate = activeRecurringChargeInstance.getNextChargeDate();
-                    while (applicationDate != null && applicationDate.getTime() <= endContractDate.getTime()) {
-                        log.info("Schedule applicationDate={}", applicationDate);
-                        applicationDate = DateUtils.setTimeToZero(applicationDate);
+                    chargeDate = activeRecurringChargeInstance.getChargeDate();
+                    nextChargeDate = activeRecurringChargeInstance.getNextChargeDate();
+                    while (nextChargeDate != null && chargeDate.getTime() <= endContractDate.getTime()) {
+                        log.info("Schedule applicationDate={}", chargeDate);
                         if (!recurringChargeTemplate.getApplyInAdvance()) {
-                            walletOperationService.applyNotAppliedinAdvanceReccuringCharge(activeRecurringChargeInstance, false, recurringChargeTemplate);
+                            walletOperationService.applyNotAppliedinAdvanceReccuringCharge(activeRecurringChargeInstance, false, recurringChargeTemplate, null);
                         } else {
                             walletOperationService.applyReccuringCharge(activeRecurringChargeInstance, false, recurringChargeTemplate, true);
                         }
                         log.debug("chargeDate {},nextChargeDate {},  wo size {}", activeRecurringChargeInstance.getChargeDate(), activeRecurringChargeInstance.getNextChargeDate(),
                             activeRecurringChargeInstance.getWalletOperations().size());
-                        applicationDate = activeRecurringChargeInstance.getNextChargeDate();
+                        nextChargeDate = activeRecurringChargeInstance.getNextChargeDate();
 
                     }
                     activeRecurringChargeInstance.setChargeDate(chargeDate);

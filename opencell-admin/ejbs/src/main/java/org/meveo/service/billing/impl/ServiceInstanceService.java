@@ -19,6 +19,8 @@
 package org.meveo.service.billing.impl;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -40,16 +42,20 @@ import org.meveo.model.billing.Subscription;
 import org.meveo.model.billing.SubscriptionStatusEnum;
 import org.meveo.model.billing.SubscriptionTerminationReason;
 import org.meveo.model.billing.UsageChargeInstance;
+import org.meveo.model.catalog.CalendarJoin;
 import org.meveo.model.catalog.OfferTemplate;
 import org.meveo.model.catalog.OneShotChargeTemplate;
 import org.meveo.model.catalog.RecurringChargeTemplate;
 import org.meveo.model.catalog.ServiceChargeTemplate;
 import org.meveo.model.catalog.ServiceChargeTemplateUsage;
 import org.meveo.model.catalog.ServiceTemplate;
+import org.meveo.model.catalog.CalendarJoin.CalendarJoinTypeEnum;
 import org.meveo.model.shared.DateUtils;
 import org.meveo.service.base.BusinessService;
 import org.meveo.service.catalog.impl.ServiceTemplateService;
 import org.meveo.service.script.service.ServiceModelScriptService;
+
+import jxl.write.DateTime;
 
 /**
  * ServiceInstanceService.
@@ -94,6 +100,13 @@ public class ServiceInstanceService extends BusinessService<ServiceInstance> {
      */
     @Inject
     ServiceTemplateService serviceTemplateService;
+    
+    @Inject
+    private TerminationReasonService terminationReasonService;
+    
+    @Inject
+    private SubscriptionService subscriptionService;
+
 
     /**
      * Find a service instance list by subscription entity, service template code and service instance status list.
@@ -274,11 +287,42 @@ public class ServiceInstanceService extends BusinessService<ServiceInstance> {
      * @throws IncorrectServiceInstanceException incorrect service instance exception
      * @throws BusinessException business exception
      */
+//    public void serviceActivation(ServiceInstance serviceInstance, BigDecimal amountWithoutTax, BigDecimal amountWithoutTax2)
+//            throws IncorrectSusbcriptionException, IncorrectServiceInstanceException, BusinessException {
+//        serviceActivation(serviceInstance, true, amountWithoutTax, amountWithoutTax2);
+//    }
+    
     public void serviceActivation(ServiceInstance serviceInstance, BigDecimal amountWithoutTax, BigDecimal amountWithoutTax2)
             throws IncorrectSusbcriptionException, IncorrectServiceInstanceException, BusinessException {
-        serviceActivation(serviceInstance, true, amountWithoutTax, amountWithoutTax2);
+    	if (serviceInstance.getStatus() == InstanceStatusEnum.SUSPENDED){
+    		serviceSuspensionToReactivation(serviceInstance, serviceInstance.getTerminationDate(), new Date());
+    	}
+    	else{
+    		SubscriptionTerminationReason serviceTerminationReason = terminationReasonService.findByCode("NEW_ACTIVATION");
+    		serviceActivation(serviceInstance, true, amountWithoutTax, amountWithoutTax2, serviceInstance.getSubscriptionDate(), false, null, serviceTerminationReason);
+    	}
     }
 
+    public List<OneShotChargeInstance> getNotClosedSubscriptionChargeInstances(ServiceInstance serviceInstance){
+    	List<OneShotChargeInstance> notClosedOneShotChargeInstances = new ArrayList<OneShotChargeInstance>();
+    	for (OneShotChargeInstance oneShotChargeInstance : serviceInstance.getSubscriptionChargeInstances()) {
+    		if (oneShotChargeInstance.getStatus() != InstanceStatusEnum.CLOSED){
+    			notClosedOneShotChargeInstances.add(oneShotChargeInstance);
+    		}
+    	}
+    	return notClosedOneShotChargeInstances;
+    }
+    
+    public List<RecurringChargeInstance> getNotClosedRecurringChargeInstances(ServiceInstance serviceInstance){
+    	List<RecurringChargeInstance> notClosedRecurringChargeInstances = new ArrayList<RecurringChargeInstance>();
+    	for (RecurringChargeInstance recurringChargeInstance : serviceInstance.getRecurringChargeInstances()) {
+    		if (recurringChargeInstance.getStatus() != InstanceStatusEnum.CLOSED){
+    			notClosedRecurringChargeInstances.add(recurringChargeInstance);
+    		}
+    	}
+    	return notClosedRecurringChargeInstances;
+    }
+    
     /**
      * Activate a service, the subscription charges can be applied or not.
      * 
@@ -290,7 +334,7 @@ public class ServiceInstanceService extends BusinessService<ServiceInstance> {
      * @throws IncorrectServiceInstanceException incorrect service instance exception
      * @throws BusinessException business exception
      */
-    public void serviceActivation(ServiceInstance serviceInstance, boolean applySubscriptionCharges, BigDecimal amountWithoutTax, BigDecimal amountWithoutTax2)
+    public void serviceActivation(ServiceInstance serviceInstance, boolean applySubscriptionCharges, BigDecimal amountWithoutTax, BigDecimal amountWithoutTax2, Date activationDate, boolean isReactivation, Long prevServiceInstanceId, SubscriptionTerminationReason activationReason)
             throws IncorrectSusbcriptionException, IncorrectServiceInstanceException, BusinessException {
         Subscription subscription = serviceInstance.getSubscription();
 
@@ -322,7 +366,7 @@ public class ServiceInstanceService extends BusinessService<ServiceInstance> {
 
         subscription.setStatus(SubscriptionStatusEnum.ACTIVE);
 
-        if (serviceInstance.getSubscriptionDate() == null) {
+        if (activationDate == null) {
             serviceInstance.setSubscriptionDate(new Date());
         }
 
@@ -344,11 +388,11 @@ public class ServiceInstanceService extends BusinessService<ServiceInstance> {
 
         // apply subscription charges
         if (applySubscriptionCharges) {
-            for (OneShotChargeInstance oneShotChargeInstance : serviceInstance.getSubscriptionChargeInstances()) {
+            for (OneShotChargeInstance oneShotChargeInstance : getNotClosedSubscriptionChargeInstances(serviceInstance)) {
                 oneShotChargeInstance.setQuantity(serviceInstance.getQuantity());
-                oneShotChargeInstance.setChargeDate(serviceInstance.getSubscriptionDate());
+                oneShotChargeInstance.setChargeDate(activationDate);
 
-                oneShotChargeInstanceService.oneShotChargeApplication(subscription, oneShotChargeInstance, serviceInstance.getSubscriptionDate(),
+                oneShotChargeInstanceService.oneShotChargeApplication(subscription, oneShotChargeInstance, activationDate,
                     oneShotChargeInstance.getQuantity(), serviceInstance.getOrderNumber());
                 oneShotChargeInstance.setStatus(InstanceStatusEnum.CLOSED);
                 oneShotChargeInstanceService.update(oneShotChargeInstance);
@@ -359,30 +403,90 @@ public class ServiceInstanceService extends BusinessService<ServiceInstance> {
 
         // activate recurring charges
 
-        for (RecurringChargeInstance recurringChargeInstance : serviceInstance.getRecurringChargeInstances()) {
+        for (RecurringChargeInstance recurringChargeInstance : getNotClosedRecurringChargeInstances(serviceInstance)) {
 
             // application of subscription prorata
-            recurringChargeInstance.setSubscriptionDate(serviceInstance.getSubscriptionDate());
-            recurringChargeInstance.setChargeDate(serviceInstance.getSubscriptionDate());
+            recurringChargeInstance.setSubscriptionDate(activationDate);            
             recurringChargeInstance.setQuantity(serviceInstance.getQuantity());
             recurringChargeInstance.setStatus(InstanceStatusEnum.ACTIVE);
             recurringChargeInstanceService.update(recurringChargeInstance);
             walletOperationService.chargeSubscription(recurringChargeInstance);
 
+        	int durationTermInMonthStart = 0;
+        	Date durationTermInMonthDateStart = null;
+        	if (recurringChargeInstance.getRecurringChargeTemplate().getDurationTermInMonthStart() != null){
+        		durationTermInMonthStart = recurringChargeInstance.getRecurringChargeTemplate().getDurationTermInMonthStart();
+        		if (durationTermInMonthStart > 0){
+                    durationTermInMonthDateStart = DateUtils.addMonthsToDate(recurringChargeInstance.getServiceInstance().getSubscriptionDate(), durationTermInMonthStart);
+        		}
+        	}
+
+    		if (durationTermInMonthDateStart != null && durationTermInMonthDateStart.after(activationDate))
+    		{
+    			Integer agreementExtensionDays = recurringChargeInstance.getServiceInstance().getSubscription()
+						.getAgreementExtensionDays();
+				if (agreementExtensionDays != null && agreementExtensionDays > 0) {
+					durationTermInMonthDateStart = DateUtils.addDaysToDate(durationTermInMonthDateStart, agreementExtensionDays);
+				}
+    			recurringChargeInstance.setChargeDate(durationTermInMonthDateStart);
+    		}
+    		else{
+    			recurringChargeInstance.setChargeDate(activationDate);
+    		}
+
+    		CalendarJoin calendarJoin = new CalendarJoin();
+    		calendarJoin.setInitDate(activationDate);
+    		calendarJoin.setJoinCalendar2(recurringChargeInstance.getRecurringChargeTemplate().getCalendar());
+    		calendarJoin.setJoinCalendar1(recurringChargeInstance.getUserAccount().getBillingAccount().getBillingCycle().getCalendar());
+    		calendarJoin.setJoinType(CalendarJoinTypeEnum.INTERSECT);
+    		
+    		recurringChargeInstance.setNextChargeDate( calendarJoin.nextCalendarDate(recurringChargeInstance.getChargeDate()));
+    		
+    		int durationTermInMonth = 0;
+    		boolean isLastChargingApplied = false;
+    		Date durationTermInMonthDate = null;
+    		if (recurringChargeInstance.getRecurringChargeTemplate().getDurationTermInMonth() != null) {
+    			durationTermInMonth = recurringChargeInstance.getRecurringChargeTemplate().getDurationTermInMonth();
+    			if (durationTermInMonth > 0) {
+    				durationTermInMonthDate = DateUtils
+    						.addMonthsToDate(recurringChargeInstance.getServiceInstance().getSubscriptionDate(), durationTermInMonth);
+    				Integer agreementExtensionDays = recurringChargeInstance.getServiceInstance().getSubscription()
+    						.getAgreementExtensionDays();
+    				if (agreementExtensionDays != null && agreementExtensionDays > 0) {
+    					durationTermInMonthDate = DateUtils.addDaysToDate(durationTermInMonthDate, agreementExtensionDays);
+    				}
+    				if (recurringChargeInstance.getNextChargeDate() != null && recurringChargeInstance.getNextChargeDate().after(durationTermInMonthDate)) {
+    					recurringChargeInstance.setNextChargeDate(durationTermInMonthDate);
+    				}
+    			}
+    		}
+    		
             if (recurringChargeInstance.getRecurringChargeTemplate().getDurationTermInMonth() != null) {
                 if (recurringChargeInstance.getRecurringChargeTemplate().getDurationTermInMonth() > agreementMonthTerm) {
                     agreementMonthTerm = recurringChargeInstance.getRecurringChargeTemplate().getDurationTermInMonth();
                 }
             }
-            int nbRating = recurringChargeInstanceService.applyRecurringCharge(recurringChargeInstance.getId(),
-                serviceInstance.getRateUntilDate() == null ? new Date() : serviceInstance.getRateUntilDate(), serviceInstance.getRateUntilDate() != null);
-            log.debug("rated " + nbRating + " missing periods during activation");
+            if (recurringChargeInstance.getRecurringChargeTemplate().getApplyInAdvance()){ //guven
+	            int nbRating = recurringChargeInstanceService.applyRecurringCharge(recurringChargeInstance.getId(),
+	                serviceInstance.getRateUntilDate() == null ? new Date() : serviceInstance.getRateUntilDate(), serviceInstance.getRateUntilDate() != null);
+	            log.debug("rated " + nbRating + " missing periods during activation");
+            } //guven
+            
         }
         for (UsageChargeInstance usageChargeInstance : serviceInstance.getUsageChargeInstances()) {
             usageChargeInstanceService.activateUsageChargeInstance(usageChargeInstance);
         }
 
         serviceInstance.setStatus(InstanceStatusEnum.ACTIVE);
+        
+        if (activationReason != null){
+        	serviceInstance.setSubscriptionActivationReason(activationReason);
+        }
+        
+        if (isReactivation){
+        	serviceInstance.setTerminationDate(null);
+        	serviceInstance.setPrevServiceInstanceId(prevServiceInstanceId);
+        }
         serviceInstance = update(serviceInstance);
 
         // execute subscription script
@@ -466,7 +570,11 @@ public class ServiceInstanceService extends BusinessService<ServiceInstance> {
             }
             log.debug("chargeDate={}, storedNextChargeDate={}, enDate {}", chargeDate, storedNextChargeDate, endDate);
             if (endDate.after(nextChargeDate)) {
-                walletOperationService.applyChargeAgreement(recurringChargeInstance, recurringChargeInstance.getRecurringChargeTemplate(), endDate);
+                if (!recurringChargeInstance.getRecurringChargeTemplate().getApplyInAdvance()) {
+                    walletOperationService.applyNotAppliedinAdvanceReccuringCharge(recurringChargeInstance, false, recurringChargeInstance.getRecurringChargeTemplate(), endDate);
+                } else {
+                    walletOperationService.applyReccuringCharge(recurringChargeInstance, false, recurringChargeInstance.getRecurringChargeTemplate(), false);
+                }
             } else if (applyReimbursment) {
                 Date endAgreementDate = recurringChargeInstance.getServiceInstance().getEndAgreementDate();
                 log.debug("terminationDate={}, endAgreementDate={}, nextChargeDate={}", terminationDate, endAgreementDate, nextChargeDate);
@@ -589,6 +697,84 @@ public class ServiceInstanceService extends BusinessService<ServiceInstance> {
      * @throws IncorrectServiceInstanceException incorrect service instance exception
      * @throws BusinessException business exception
      */
+
+
+   
+    public void serviceSuspensionToReactivation(ServiceInstance serviceInstance, Date suspensionDate, Date reactivationDate)
+            throws IncorrectSusbcriptionException, IncorrectServiceInstanceException, BusinessException {
+
+        String serviceCode = serviceInstance.getCode();
+        if (reactivationDate == null) {
+            reactivationDate = new Date();
+        }
+
+        Subscription subscription = serviceInstance.getSubscription();
+        if (subscription == null) {
+            throw new IncorrectSusbcriptionException("service Instance does not have subscrption . serviceCode=" + serviceInstance.getCode());
+        }
+        ServiceTemplate serviceTemplate = serviceInstance.getServiceTemplate();
+        if (serviceInstance.getStatus() != InstanceStatusEnum.SUSPENDED) {
+            throw new IncorrectServiceInstanceException("service instance is not suspended. service Code=" + serviceCode + ",subscription Code" + subscription.getCode());
+        }
+        checkServiceAssociatedWithOffer(serviceInstance);
+
+        String descriptionOverride = serviceTemplate.getDescriptionOverride();
+        serviceTemplate = serviceTemplateService.findById(serviceTemplate.getId());
+
+        ServiceInstance serviceInstanceNew = new ServiceInstance();
+        serviceInstanceNew.setCode(serviceTemplate.getCode());
+        
+        serviceInstanceNew.setDescription(descriptionOverride);
+       
+        serviceInstanceNew.setServiceTemplate(serviceTemplate);
+        serviceInstanceNew.setSubscription((Subscription) serviceInstance.getSubscription());
+        if (serviceInstance.getSubscriptionDate() != null) {
+        	serviceInstanceNew.setSubscriptionDate(serviceInstance.getSubscriptionDate());
+        } else {
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(new Date());
+            calendar.set(Calendar.HOUR_OF_DAY, 0);
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+            calendar.set(Calendar.MILLISECOND, 0);
+            serviceInstanceNew.setSubscriptionDate(calendar.getTime());
+        }
+        serviceInstanceNew.setQuantity(serviceInstance.getQuantity());
+        serviceInstanciation(serviceInstanceNew, descriptionOverride);
+        
+       
+        
+        SubscriptionTerminationReason serviceActivationReason = serviceInstance.getSubscriptionTerminationReason();
+        if (serviceActivationReason != null && serviceActivationReason.isApplyAgreementExtension()){
+        	
+        	Integer agreementExtensionDays = subscription.getAgreementExtensionDays();
+        	if (agreementExtensionDays == null){
+        		agreementExtensionDays  = 0;
+        	}
+        	
+        	Integer extensionDay = (int) DateUtils.daysBetween(suspensionDate, reactivationDate);
+        	agreementExtensionDays = agreementExtensionDays + extensionDay;
+        	
+        	subscription.setAgreementExtensionDays(agreementExtensionDays);
+        	subscriptionService.update(subscription);
+        }
+        serviceActivation(serviceInstanceNew, true, null , null, reactivationDate, true, serviceInstance.getId(), serviceActivationReason);
+        
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date());
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        
+        terminateService( serviceInstance, suspensionDate ,false,false,false,"ordernumber",null);
+       
+        
+    }
+    
+    
+    
+    
     public void serviceReactivation(ServiceInstance serviceInstance, Date reactivationDate)
             throws IncorrectSusbcriptionException, IncorrectServiceInstanceException, BusinessException {
 

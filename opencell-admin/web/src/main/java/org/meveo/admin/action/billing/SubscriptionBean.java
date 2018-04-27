@@ -713,6 +713,7 @@ public class SubscriptionBean extends CustomFieldBean<Subscription> {
 
     public void suspendService() {
         try {
+        	
             // Obtain EM attached service instance entity
             entity = subscriptionService.refreshOrRetrieve(entity);
             selectedServiceInstance = entity.getServiceInstances().get(entity.getServiceInstances().indexOf(selectedServiceInstance));

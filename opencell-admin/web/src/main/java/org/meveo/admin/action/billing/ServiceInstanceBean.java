@@ -34,6 +34,7 @@ import org.meveo.admin.exception.BusinessException;
 import org.meveo.commons.utils.ParamBean;
 import org.meveo.model.billing.InstanceStatusEnum;
 import org.meveo.model.billing.ServiceInstance;
+import org.meveo.model.billing.SubscriptionTerminationReason;
 import org.meveo.service.base.PersistenceService;
 import org.meveo.service.base.local.IPersistenceService;
 import org.meveo.service.billing.impl.ServiceInstanceService;
@@ -175,7 +176,9 @@ public class ServiceInstanceBean extends CustomFieldBean<ServiceInstance> {
         log.info("closeAccount serviceInstanceId:" + entity.getId());
 
         try {
+        	SubscriptionTerminationReason suspensionReason = entity.getSubscriptionTerminationReason();
             entity = serviceInstanceService.refreshOrRetrieve(entity);
+            entity.setSubscriptionTerminationReason(suspensionReason);
             serviceInstanceService.serviceSuspension(entity, new Date());
             messages.info(new BundleKey("messages", "suspension.suspendSuccessful"));
 

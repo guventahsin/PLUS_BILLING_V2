@@ -127,11 +127,85 @@ public class CalendarYearly extends Calendar {
 
     @Override
     public Date previousPeriodEndDate(Date date) {
-        return null;
+		Date past = DateUtils.newDate(1970, 0, 1, 0, 0, 0);
+		Date result = past;
+		int currentYear = DateUtils.getYearFromDate(date);
+		for (DayInYear dayInYear : days) {
+			Date d = DateUtils.newDate(currentYear, dayInYear.getMonth().getId() - 1,
+					dayInYear.getDay(), 0, 0, 0);
+			if ((d.before(date) || d.equals(date)) && d.after(result)) {
+				result = d;
+			}
+		}
+		if (result == past) { // if result did not change
+			currentYear--; // check for date in previous year
+			for (DayInYear dayInYear : days) {
+				Date d = DateUtils.newDate(currentYear, dayInYear.getMonth().getId() - 1,
+						dayInYear.getDay(), 0, 0, 0);
+				if ((d.before(date) || d.equals(date)) && d.after(result)) {
+					result = d;
+				}
+			}
+		}
+		if (result == past) {
+			throw new IllegalStateException("Previous calendar date could not be found!");
+		}
+		return result;
     }
 
     @Override
     public Date nextPeriodStartDate(Date date) {
-        return null;
+		Date future = DateUtils.newDate(3000, 0, 1, 0, 0, 0);
+		Date result = future;
+		int currentYear = DateUtils.getYearFromDate(date);
+		for (DayInYear dayInYear : days) {
+			Date d = DateUtils.newDate(currentYear, dayInYear.getMonth().getId() - 1,
+					dayInYear.getDay(), 0, 0, 0);
+			if (d.after(date) && d.before(result)) {
+				result = d;
+			}
+		}
+		if (result == future) { // if result did not change
+			currentYear++; // check for date in next year
+			for (DayInYear dayInYear : days) {
+				Date d = DateUtils.newDate(currentYear, dayInYear.getMonth().getId() - 1,
+						dayInYear.getDay(), 0, 0, 0);
+				if (d.after(date) && d.before(result)) {
+					result = d;
+				}
+			}
+		}
+		if (result == future) {
+			throw new IllegalStateException("Next calendar date could not be found!");
+		}
+		return result;
     }
+
+	@Override
+	public Date previousCalendarDate2(Date date) {
+		Date past = DateUtils.newDate(1970, 0, 1, 0, 0, 0);
+		Date result = past;
+		int currentYear = DateUtils.getYearFromDate(date);
+		for (DayInYear dayInYear : days) {
+			Date d = DateUtils.newDate(currentYear, dayInYear.getMonth().getId() - 1,
+					dayInYear.getDay(), 0, 0, 0);
+			if ((d.before(date) || d.equals(date)) && d.after(result)) {
+				result = d;
+			}
+		}
+		if (result == past) { // if result did not change
+			currentYear--; // check for date in previous year
+			for (DayInYear dayInYear : days) {
+				Date d = DateUtils.newDate(currentYear, dayInYear.getMonth().getId() - 1,
+						dayInYear.getDay(), 0, 0, 0);
+				if ((d.before(date) || d.equals(date)) && d.after(result)) {
+					result = d;
+				}
+			}
+		}
+		if (result == past) {
+			throw new IllegalStateException("Previous calendar date could not be found!");
+		}
+		return result;
+	}
 }

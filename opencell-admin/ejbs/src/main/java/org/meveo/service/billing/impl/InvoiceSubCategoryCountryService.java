@@ -168,6 +168,25 @@ public class InvoiceSubCategoryCountryService extends
 
         return null;
     }
+    
+    @SuppressWarnings("unchecked")
+    public List<InvoiceSubcategoryCountry> findInvoiceSubCategoryCountries(Long invoiceSubCategoryId, Long countryId, Date applicationDate) {
+
+        try {
+            QueryBuilder qb = new QueryBuilder(InvoiceSubcategoryCountry.class, "i");
+            qb.addCriterion("invoiceSubCategory.id", "=", invoiceSubCategoryId, true);
+            qb.addCriterion("tradingCountry.id", "=", countryId, true);
+            qb.addCriterionDateInRange("startValidityDate", "endValidityDate", applicationDate);
+            qb.addOrderCriterion("priority", false);
+
+            List<InvoiceSubcategoryCountry> invoiceSubcategoryCountries = qb.getQuery(getEntityManager()).getResultList();
+            return invoiceSubcategoryCountries;
+        } catch (NoResultException ex) {
+            log.warn("failed to find invoice SubCategory Country", ex);
+        }
+
+        return null;
+    }
 
     /**
      * Find InvoiceSubCategoryCountry without fetching join entities.

@@ -152,14 +152,86 @@ public class CalendarPeriod extends Calendar {
 
         return null;
     }
+    
+    public Date previousCalendarDate2(Date date) {
 
-    @Override
-    public Date previousPeriodEndDate(Date date) {
+        if (periodLength == null || periodUnit == null || getInitDate() == null || date.before(getInitDate())) {
+            return null;
+        }
+        if (nbPeriods == null) {
+            nbPeriods = 0;
+        }
+
+        // Date cleanDate = DateUtils.truncate(getInitDate(), java.util.Calendar.DAY_OF_MONTH);
+        // GregorianCalendar calendar = new GregorianCalendar();
+        // calendar.setTime(cleanDate);
+
+        GregorianCalendar calendar = new GregorianCalendar();
+        calendar.setTime(getInitDate());
+
+        
+        if (date.compareTo(calendar.getTime()) == 0){
+        	calendar.add(periodUnit, -1*periodLength);
+        	return  calendar.getTime();
+        }
+        
+        int i = 1;
+        while (date.compareTo(calendar.getTime()) >= 0) {
+            Date oldDate = calendar.getTime();
+            calendar.add(periodUnit, periodLength);
+            if (date.compareTo(oldDate) >= 0 && date.compareTo(calendar.getTime()) < 0) {
+                return oldDate;
+            }
+
+            i++;
+            if (nbPeriods > 0 && i > nbPeriods) {
+                break;
+            }
+        }
+
         return null;
     }
 
     @Override
+    public Date previousPeriodEndDate(Date date) {
+      
+    	if (periodLength == null || periodUnit == null || getInitDate() == null || date.before(getInitDate())) {
+            return null;
+        }
+        GregorianCalendar calendar = new GregorianCalendar();
+        calendar.setTime(getInitDate());
+
+        int i = 1;
+        while (date.compareTo(calendar.getTime()) >= 0) {
+            Date oldDate = calendar.getTime();
+            calendar.add(periodUnit, periodLength);
+            if (date.compareTo(oldDate) >= 0 && date.compareTo(calendar.getTime()) < 0) {
+                return oldDate;
+            }
+        }
+
+        return null;
+
+    }
+
+    @Override
     public Date nextPeriodStartDate(Date date) {
+        if (periodLength == null || periodUnit == null || getInitDate() == null || date.before(getInitDate())) {
+            return null;
+        }
+
+        GregorianCalendar calendar = new GregorianCalendar();
+        calendar.setTime(getInitDate());
+
+        int i = 1;
+        while (date.compareTo(calendar.getTime()) >= 0) {
+            Date oldDate = calendar.getTime();
+            calendar.add(periodUnit, periodLength);
+            if (date.compareTo(oldDate) >= 0 && date.compareTo(calendar.getTime()) < 0) {
+                return calendar.getTime();
+            }
+        }
+
         return null;
     }
 

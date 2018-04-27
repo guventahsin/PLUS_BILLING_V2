@@ -108,6 +108,10 @@ public class ChargeTemplate extends BusinessCFEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "rounding_mode")
     private RoundingModeEnum roundingMode = RoundingModeEnum.NEAREST;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "charge_sub_type")
+    private ChargeSubTypeEnum chargeSubType = ChargeSubTypeEnum.CHARGE;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "revenue_recog_rule_id")
@@ -215,7 +219,7 @@ public class ChargeTemplate extends BusinessCFEntity {
         return null;
     }
 
-    public Map<String, String> getDescriptionI18n() {
+	public Map<String, String> getDescriptionI18n() {
         return descriptionI18n;
     }
 
@@ -235,4 +239,12 @@ public class ChargeTemplate extends BusinessCFEntity {
         }
         return descriptionI18n;
     }
+    
+    public ChargeSubTypeEnum getChargeSubType() {
+		return chargeSubType;
+	}
+
+	public void setChargeSubType(ChargeSubTypeEnum chargeSubType) {
+		this.chargeSubType = chargeSubType;
+	}
 }

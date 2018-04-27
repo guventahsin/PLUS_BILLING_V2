@@ -95,6 +95,10 @@ public class ServiceInstance extends BusinessCFEntity {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "end_agrement_date")
     private Date endAgreementDate;
+    
+    @Column(name = "prev_service_instance_id")
+    private Long prevServiceInstanceId;
+    
 
     @OneToMany(mappedBy = "serviceInstance", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     // TODO : Add orphanRemoval annotation.
@@ -137,7 +141,19 @@ public class ServiceInstance extends BusinessCFEntity {
     @Column(name = "rate_until_date")
     private Date rateUntilDate;
 
-    public Date getEndAgreementDate() {
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sub_activation_reason_id")
+    private SubscriptionTerminationReason subscriptionActivationReason;
+    
+    public SubscriptionTerminationReason getSubscriptionActivationReason() {
+		return subscriptionActivationReason;
+	}
+
+	public void setSubscriptionActivationReason(SubscriptionTerminationReason subscriptionActivationReason) {
+		this.subscriptionActivationReason = subscriptionActivationReason;
+	}
+
+	public Date getEndAgreementDate() {
         return endAgreementDate;
     }
 
@@ -314,5 +330,14 @@ public class ServiceInstance extends BusinessCFEntity {
 
     public BigDecimal getPreviousQuantity() {
         return previousQuantity;
+    }
+    
+    
+    public Long getPrevServiceInstanceId() {
+        return prevServiceInstanceId;
+    }
+
+    public void setPrevServiceInstanceId(Long prevServiceInstanceId) {
+        this.prevServiceInstanceId = prevServiceInstanceId;
     }
 }

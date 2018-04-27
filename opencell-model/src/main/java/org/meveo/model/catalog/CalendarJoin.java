@@ -100,6 +100,9 @@ public class CalendarJoin extends Calendar {
      */
     public Date nextCalendarDate(Date date) {
 
+    	joinCalendar1.setInitDate(getInitDate());
+    	joinCalendar2.setInitDate(getInitDate());
+    	
         Date date1 = joinCalendar1.nextCalendarDate(date);
         Date date2 = joinCalendar2.nextCalendarDate(date);
 
@@ -151,7 +154,7 @@ public class CalendarJoin extends Calendar {
     public Date previousCalendarDate(Date date) {
 
         Date date1 = joinCalendar1.previousCalendarDate(date);
-        Date date2 = joinCalendar2.previousCalendarDate(date);
+        Date date2 = joinCalendar2.previousCalendarDate2(date);
 
         if (date1 == null && date2 == null) {
             return null;
@@ -300,4 +303,10 @@ public class CalendarJoin extends Calendar {
     public String getCalendarTypeWSubtypes() {
         return joinType.name();
     }
+
+	@Override
+	public Date previousCalendarDate2(Date date) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

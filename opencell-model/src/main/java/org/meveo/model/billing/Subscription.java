@@ -156,8 +156,24 @@ public class Subscription extends BusinessCFEntity {
     @Column(name = "renewal_notified_date")
     private Date renewalNotifiedDate;
 
-    public Date getEndAgreementDate() {
-        return endAgreementDate;
+    @Column(name = "agreement_extension_days")
+    private Integer agreementExtensionDays;
+    
+    
+    public Integer getAgreementExtensionDays() {
+		return agreementExtensionDays;
+	}
+
+	public void setAgreementExtensionDays(Integer agreementExtensionDays) {
+		this.agreementExtensionDays = agreementExtensionDays;
+	}
+
+	public Date getEndAgreementDate() {
+        
+		if (getAgreementExtensionDays() != null){
+			endAgreementDate = DateUtils.addDaysToDate(endAgreementDate, agreementExtensionDays);
+		}
+		return endAgreementDate;
     }
 
     public void setEndAgreementDate(Date endAgreementDate) {

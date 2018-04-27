@@ -169,6 +169,39 @@
 				</hftl:formPanel>
 			</p:outputPanel>
 		</p:dialog>
+		
+				<p:dialog id="serviceSuspensionPopup"
+			header="#{messages['serviceTerminationPopup.title']}"
+			widgetVar="dlg_serviceSuspensionPopup"  modal="true" appendTo="@(body)" closeOnEscape="true" width="700" >
+			<p:outputPanel id="suspensionPanel">
+                <p:messages id="suspensionMessages"/>
+				<hftl:formPanel edit="true"
+					backingBean="#{subscriptionBean}"
+					entity="#{subscriptionBean.selectedServiceInstance}"
+					styleClass="formPanel" formId="subscTermFrm1"
+					showFormButtons="false" useCustomIdParam="true">
+
+						<hftl:formField label="#{messages['serviceInstance.code']}"
+							field="code" size="50" edit="false" componentWidth="25"/>
+						<hftl:formField label="#{messages['menu.terminationReason']}"
+							field="subscriptionTerminationReason" valueLabelField="descriptionOrCode"
+							required="true"  edit="true"
+							listElements="#{subscriptionTerminationReasonService.listReasons()}" />
+
+                        <ui:param name="buttons" value="true"/>
+                        <ui:define name="buttons">                        
+							<p:commandButton action="#{subscriptionBean.suspendService()}"
+								value="#{messages['button.suspendButton']}"
+								oncomplete="if (args &amp;&amp; !args.validationFailed) PF('dlg_serviceSuspensionPopup').hide()"
+								update="@form :subscriptionTab" />
+							<p:commandButton immediate="true"
+								onclick="PF('dlg_serviceSuspensionPopup').hide()" type="button"
+								value="#{messages['management.close']}" />
+						</ui:define>
+
+				</hftl:formPanel>
+			</p:outputPanel>
+		</p:dialog>
 
 <p:dialog id="subscriptionTerminationPopup"
 			header="#{messages['subscriptionTerminationPopup.title']}"
@@ -296,11 +329,15 @@
 									<p:commandButton action="#{subscriptionBean.activateService}"
 										value="#{messages['button.activateButton']}"
 										update=":subscriptionTab"
-										disabled="#{subscriptionBean.selectedServiceInstance==null || subscriptionBean.selectedServiceInstance.status!='INACTIVE'}">
+										disabled="#{subscriptionBean.selectedServiceInstance==null or (subscriptionBean.selectedServiceInstance.status!='INACTIVE' and subscriptionBean.selectedServiceInstance.status!='SUSPENDED')}">
 										<p:confirm header="#{messages['commons.confirmationHeader']}"
 											message="#{messages['confirmationMessage.confirmActivation']}"
 											icon="ui-icon-alert" />
 									</p:commandButton>
+									<p:commandButton value="#{messages['button.suspendButton']}"
+										onclick="PF('dlg_serviceSuspensionPopup').show();"
+										type="button"
+										disabled="#{subscriptionBean.selectedServiceInstance==null || subscriptionBean.selectedServiceInstance.status!='ACTIVE'}" />
 									<p:commandButton value="#{messages['button.terminateButton']}"
 										onclick="PF('dlg_serviceTerminationPopup').show();"
 										type="button"
