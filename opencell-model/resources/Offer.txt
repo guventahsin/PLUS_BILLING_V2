@@ -1,0 +1,29 @@
+
+OFFER -> Hos Geldin Paketi + Sinirsiz Fiber Internet
+
+Service -> Hos Geldin paketi TV
+Charge -> TV Aktivasyon Ücreti - 60 TL - 1 Ay
+Charge -> TV Aktivasyon Ücreti Indirimi - 60 TL - 1 Ay
+Charge -> TV Kurulum Bedeli - 120 TL - 1 Ay
+Charge -> TV Kurulum Bedeli Indirimi - 120 TL - 1 Ay
+Charge -> TV Aylik Ücreti  - 60 TL - 9999 ay
+Charge -> TV Aylik Ücreti Indirimi - 30 TL - 24 ay
+
+
+Service -> Hos Geldin Paketi 24 Mb 50 Gb Yalin Internet
+Charge -> Internet Aktivasyon Ücreti - 192 TL - 1 ay 
+Charge -> Internet Aktivasyon Ücreti Indirimi- 192 TL - 1 ay
+Charge -> Internet Kurulum Ücreti - 200 TL - 1 ay
+Charge -> Internet Kurulum Ücreti Indirimi - 200 TL - 1 ay
+Charge -> Yalin Internet Aylik Ücreti  - 15 TL - 9999 ay
+Charge -> Yalin Internet Aylik Ücreti Indirimi - 8 TL - 24 ay
+Charge -> Internet Aylik Ücreti  - 63 TL - 9999 ay
+Charge -> Internet Aylik Ücreti Indirimi - 30 TL - 24 ay
+
+
+Service -> Dsmart Go
+Charge -> Dsmart Go Aylik Ücreti - 20 TL - 9999 ay   
+Charge -> Dsmart Go Aylik Ücreti Indirimi - 20 TL - 24 ay
+
+Service -> Dsmart Modem
+Charge -> Vdsl Modem Aylik Ücreti - 7 TL - 24 ay 
