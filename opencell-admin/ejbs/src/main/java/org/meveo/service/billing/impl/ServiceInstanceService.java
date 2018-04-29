@@ -564,31 +564,34 @@ public class ServiceInstanceService extends BusinessService<ServiceInstance> {
             }
 
             Date endDate = terminationDate;
-
-            if (applyAgreement && serviceInstance.getEndAgreementDate() != null && terminationDate.before(serviceInstance.getEndAgreementDate())) {
-                endDate = serviceInstance.getEndAgreementDate();
-            }
-            log.debug("chargeDate={}, storedNextChargeDate={}, enDate {}", chargeDate, storedNextChargeDate, endDate);
-            if (endDate.after(nextChargeDate)) {
-                if (!recurringChargeInstance.getRecurringChargeTemplate().getApplyInAdvance()) {
-                    walletOperationService.applyNotAppliedinAdvanceReccuringCharge(recurringChargeInstance, false, recurringChargeInstance.getRecurringChargeTemplate(), endDate);
-                } else {
-                    walletOperationService.applyReccuringCharge(recurringChargeInstance, false, recurringChargeInstance.getRecurringChargeTemplate(), false);
-                }
-            } else if (applyReimbursment) {
-                Date endAgreementDate = recurringChargeInstance.getServiceInstance().getEndAgreementDate();
-                log.debug("terminationDate={}, endAgreementDate={}, nextChargeDate={}", terminationDate, endAgreementDate, nextChargeDate);
-                if (applyAgreement && endAgreementDate != null && terminationDate.before(endAgreementDate)) {
-                    if (endAgreementDate.before(nextChargeDate)) {
-                        recurringChargeInstance.setTerminationDate(endAgreementDate);
-                        walletOperationService.applyReimbursment(recurringChargeInstance);
-                    }
-
-                } else if (terminationDate.before(storedNextChargeDate)) {
-                    recurringChargeInstance.setTerminationDate(terminationDate);
-                    walletOperationService.applyReimbursment(recurringChargeInstance);
-                }
-
+            
+            if (recurringChargeInstance.getStatus() != InstanceStatusEnum.SUSPENDED){
+            	
+	            if (applyAgreement && serviceInstance.getEndAgreementDate() != null && terminationDate.before(serviceInstance.getEndAgreementDate())) {
+	                endDate = serviceInstance.getEndAgreementDate();
+	            }
+	            log.debug("chargeDate={}, storedNextChargeDate={}, enDate {}", chargeDate, storedNextChargeDate, endDate);
+	            if (endDate.after(nextChargeDate)) {
+	                if (!recurringChargeInstance.getRecurringChargeTemplate().getApplyInAdvance()) {
+	                    walletOperationService.applyNotAppliedinAdvanceReccuringCharge(recurringChargeInstance, false, recurringChargeInstance.getRecurringChargeTemplate(), endDate);
+	                } else {
+	                    walletOperationService.applyReccuringCharge(recurringChargeInstance, false, recurringChargeInstance.getRecurringChargeTemplate(), false);
+	                }
+	            } else if (applyReimbursment) {
+	                Date endAgreementDate = recurringChargeInstance.getServiceInstance().getEndAgreementDate();
+	                log.debug("terminationDate={}, endAgreementDate={}, nextChargeDate={}", terminationDate, endAgreementDate, nextChargeDate);
+	                if (applyAgreement && endAgreementDate != null && terminationDate.before(endAgreementDate)) {
+	                    if (endAgreementDate.before(nextChargeDate)) {
+	                        recurringChargeInstance.setTerminationDate(endAgreementDate);
+	                        walletOperationService.applyReimbursment(recurringChargeInstance);
+	                    }
+	
+	                } else if (terminationDate.before(storedNextChargeDate)) {
+	                    recurringChargeInstance.setTerminationDate(terminationDate);
+	                    walletOperationService.applyReimbursment(recurringChargeInstance);
+	                }
+	
+	            }
             }
             recurringChargeInstance.setStatus(InstanceStatusEnum.TERMINATED);
             recurringChargeInstanceService.update(recurringChargeInstance);

@@ -207,7 +207,15 @@ public class RecurringChargeInstanceService extends BusinessService<RecurringCha
 
         log.debug("recurringChargeSuspension : recurringChargeInstanceId={},ChargeApplications size={}", recurringChargeInstance.getId(),
             recurringChargeInstance.getWalletOperations().size());
-
+        
+        if (terminationDate.after(recurringChargeInstance.getChargeDate())) {
+            if (!recurringChargeInstance.getRecurringChargeTemplate().getApplyInAdvance()) {
+                walletOperationService.applyNotAppliedinAdvanceReccuringCharge(recurringChargeInstance, false, recurringChargeInstance.getRecurringChargeTemplate(), terminationDate);
+            } else {
+                walletOperationService.applyReccuringCharge(recurringChargeInstance, false, recurringChargeInstance.getRecurringChargeTemplate(), false);
+            }
+        }
+        
         recurringChargeInstance.setStatus(InstanceStatusEnum.SUSPENDED);
         update(recurringChargeInstance);
 
