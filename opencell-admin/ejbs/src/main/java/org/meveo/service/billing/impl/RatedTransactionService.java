@@ -121,6 +121,16 @@ public class RatedTransactionService extends PersistenceService<RatedTransaction
         return (List<RatedTransaction>) getEntityManager().createNamedQuery("RatedTransaction.listInvoiced", RatedTransaction.class).setParameter("wallet", userAccount.getWallet())
             .getResultList();
     }
+    
+    public List<RatedTransaction> getBilledRatedTransactions (List<Long> walletOperationIdList) {
+		
+		@SuppressWarnings("unchecked")
+		List<RatedTransaction> ratedTransactionsBilled = (List<RatedTransaction>) getEntityManager()
+				.createNamedQuery("RatedTransaction.getBilledRatedTransactions")
+				.setParameter("walletIdList", walletOperationIdList).getResultList();
+    
+		return ratedTransactionsBilled;
+    }
 
     /**
      * @param subscription subscription

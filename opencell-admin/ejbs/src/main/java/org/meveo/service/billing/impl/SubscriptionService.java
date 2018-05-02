@@ -18,6 +18,7 @@
  */
 package org.meveo.service.billing.impl;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -58,6 +59,9 @@ public class SubscriptionService extends BusinessService<Subscription> {
     @Inject
     private AccessService accessService;
 
+    @Inject
+    private PenaltyService penaltyService;
+    
     @MeveoAudit
     @Override
     public void create(Subscription subscription) throws BusinessException {
@@ -224,6 +228,11 @@ public class SubscriptionService extends BusinessService<Subscription> {
             offerModelScriptService.terminateSubscription(subscription, subscription.getOffer().getBusinessOfferModel().getScript().getCode(), terminationDate, terminationReason);
         }
 
+        if (terminationReason != null && terminationReason.isApplyAgreement()){
+        	BigDecimal terminationCharge = penaltyService.calculatePenalty(subscription, terminationDate);
+        	
+        }
+        
         return subscription;
     }
 

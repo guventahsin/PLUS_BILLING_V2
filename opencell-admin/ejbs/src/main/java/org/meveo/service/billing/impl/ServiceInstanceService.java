@@ -31,6 +31,7 @@ import javax.persistence.NoResultException;
 import org.meveo.admin.exception.BusinessException;
 import org.meveo.admin.exception.IncorrectServiceInstanceException;
 import org.meveo.admin.exception.IncorrectSusbcriptionException;
+import org.meveo.cache.RatingCacheContainerProvider;
 import org.meveo.commons.utils.ParamBean;
 import org.meveo.commons.utils.QueryBuilder;
 import org.meveo.commons.utils.StringUtils;
@@ -45,6 +46,7 @@ import org.meveo.model.billing.UsageChargeInstance;
 import org.meveo.model.catalog.CalendarJoin;
 import org.meveo.model.catalog.OfferTemplate;
 import org.meveo.model.catalog.OneShotChargeTemplate;
+import org.meveo.model.catalog.PricePlanMatrix;
 import org.meveo.model.catalog.RecurringChargeTemplate;
 import org.meveo.model.catalog.ServiceChargeTemplate;
 import org.meveo.model.catalog.ServiceChargeTemplateUsage;
@@ -65,7 +67,11 @@ import jxl.write.DateTime;
  */
 @Stateless
 public class ServiceInstanceService extends BusinessService<ServiceInstance> {
-    /**
+   
+    @Inject
+    private RatingCacheContainerProvider ratingCacheContainerProvider;
+    
+	/**
      * ServiceModelScriptService
      */
     @Inject
@@ -247,9 +253,17 @@ public class ServiceInstanceService extends BusinessService<ServiceInstance> {
         subscription.getServiceInstances().add(serviceInstance);
 
         for (ServiceChargeTemplate<RecurringChargeTemplate> serviceChargeTemplate : serviceTemplate.getServiceRecurringCharges()) {
-            RecurringChargeInstance chargeInstance = recurringChargeInstanceService.recurringChargeInstanciation(serviceInstance, serviceChargeTemplate.getChargeTemplate(),
-                isVirtual);
-            serviceInstance.getRecurringChargeInstances().add(chargeInstance);
+            
+        	 List<PricePlanMatrix> chargePricePlans = ratingCacheContainerProvider.getPricePlansByChargeCode(serviceChargeTemplate.getChargeTemplate().getCode());
+
+        	 for (PricePlanMatrix pricePlanMatrix : chargePricePlans){
+        		 if (pricePlanMatrix.getOfferTemplate() != null && pricePlanMatrix.getOfferTemplate().getCode() != null 
+        				 && pricePlanMatrix.getOfferTemplate().getCode().equals(subscription.getOffer().getCode())){
+        	        	RecurringChargeInstance chargeInstance = recurringChargeInstanceService.recurringChargeInstanciation(serviceInstance, serviceChargeTemplate.getChargeTemplate(),
+        	                    isVirtual);
+        	                serviceInstance.getRecurringChargeInstances().add(chargeInstance);
+        		 }
+        	 }
         }
 
         for (ServiceChargeTemplate<OneShotChargeTemplate> serviceChargeTemplate : serviceTemplate.getServiceSubscriptionCharges()) {

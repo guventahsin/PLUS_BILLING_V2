@@ -85,6 +85,8 @@ import org.meveo.model.rating.EDR;
                 + " and r.billingAccount=:billingAccount"),
         @NamedQuery(name = "RatedTransaction.getRatedTransactionsBilled", query = "SELECT r.walletOperationId FROM RatedTransaction r "
                 + " WHERE r.status=org.meveo.model.billing.RatedTransactionStatusEnum.BILLED" + " AND r.walletOperationId IN :walletIdList"),
+        @NamedQuery(name = "RatedTransaction.getBilledRatedTransactions", query = "SELECT r FROM RatedTransaction r "
+                + " WHERE r.status=org.meveo.model.billing.RatedTransactionStatusEnum.BILLED" + " AND r.walletOperationId IN :walletIdList"),
         @NamedQuery(name = "RatedTransaction.setStatusToCanceled", query = "UPDATE RatedTransaction rt set rt.status=org.meveo.model.billing.RatedTransactionStatusEnum.CANCELED"
                 + " where rt.walletOperationId IN :notBilledWalletIdList"),
         @NamedQuery(name = "RatedTransaction.getListByInvoiceAndSubCategory", query = "from RatedTransaction t where t.invoice=:invoice and t.invoiceSubCategory=:invoiceSubCategory "),
