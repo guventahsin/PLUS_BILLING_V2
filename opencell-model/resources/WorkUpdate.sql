@@ -1,6 +1,6 @@
-update billing_wallet_operation set status = 'TREATED' where status = 'OPEN'  and charge_instance_id < 334
+update billing_wallet_operation set status = 'TREATED' where status = 'OPEN' -- and charge_instance_id < 334
 
-update billing_subscription set agreement_extension_days = null where id = 3
+update billing_subscription set agreement_extension_days = null where id = 4
 
 update billing_rated_transaction set status = 'CANCELED' where status = 'OPEN'
 
