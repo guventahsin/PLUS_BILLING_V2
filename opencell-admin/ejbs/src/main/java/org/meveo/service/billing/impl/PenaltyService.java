@@ -98,17 +98,17 @@ public class PenaltyService  extends BusinessService<Penalty> {
 			
 			Penalty attachedPenalty = update(penalty);
 			
+			Penalty returnedPenalty = null;
     		if (subscription.getEndAgreementDate().after(terminationDate)){
     			    	    	
-    			penalty = getAppliedTotalDiscountAmount(subscription, terminationDate, attachedPenalty);
-    			penalty.setTotalAppliedDiscountAmountWithTax(penalty.getTotalAppliedDiscountAmountWithTax());
+    			returnedPenalty = getAppliedTotalDiscountAmount(subscription, terminationDate, attachedPenalty);
     			BigDecimal totalToBeChargedAmountWithTax = getTotalToBeChargedAmountIfNotSubsTerminated(subscription, terminationDate);
-    			penalty.setTotalToBeChargedAmountWithTax(totalToBeChargedAmountWithTax);
+    			returnedPenalty.setTotalToBeChargedAmountWithTax(totalToBeChargedAmountWithTax);
     			BigDecimal totalInstallmentAmountWithTax = getTotalRemainingInstallmentAmount(subscription, terminationDate);
-    			penalty.setTotalInstallmentAmountWithTax(totalInstallmentAmountWithTax);
+    			returnedPenalty.setTotalInstallmentAmountWithTax(totalInstallmentAmountWithTax);
 
-    			if (penalty.getTotalAppliedDiscountAmountWithTax().compareTo(totalToBeChargedAmountWithTax) <= 0 ){
-    				penaltyAmountWithTax = penalty.getTotalAppliedDiscountAmountWithTax().add(totalInstallmentAmountWithTax);
+    			if (returnedPenalty.getTotalAppliedDiscountAmountWithTax().compareTo(totalToBeChargedAmountWithTax) <= 0 ){
+    				penaltyAmountWithTax = returnedPenalty.getTotalAppliedDiscountAmountWithTax().add(totalInstallmentAmountWithTax);
     			}
     			else{
     				penaltyAmountWithTax = totalToBeChargedAmountWithTax.add(totalInstallmentAmountWithTax);
@@ -118,8 +118,8 @@ public class PenaltyService  extends BusinessService<Penalty> {
     			penaltyAmountWithTax = new BigDecimal(0);
     		}
     		
-    		penalty.setPenaltyAmountWitTax(penaltyAmountWithTax);
-    		update(penalty);
+    		returnedPenalty.setPenaltyAmountWitTax(penaltyAmountWithTax);
+    		update(returnedPenalty);
     	}
     	    	
     	return penaltyAmountWithTax;
@@ -170,7 +170,7 @@ public class PenaltyService  extends BusinessService<Penalty> {
 				penaltyWalletOperation.setPenalty(penalty);
 				penaltyWalletOperation.setChargeSubType(ChargeSubTypeEnum.DISCOUNT);
 				penaltyWalletOperation.setWalletOperation(wo);
-				penalty.getPenaltyWalletOperations().add(penaltyWalletOperation);
+				penalty.addPenaltyWalletOperation(penaltyWalletOperation);
 			}
 			
 //			List<PenaltyWalletOperation> penaltyWalletOperation = walletOperations

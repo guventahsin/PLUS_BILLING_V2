@@ -20,6 +20,7 @@ import javax.persistence.TemporalType;
 
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
+import org.meveo.model.Auditable;
 import org.meveo.model.BusinessEntity;
 
 @Entity
@@ -62,9 +63,20 @@ public class Penalty extends BusinessEntity {
     @Column(name = "installment_amount_with_tax", precision = NB_PRECISION, scale = NB_DECIMALS)
     private BigDecimal totalInstallmentAmountWithTax;	
     
-    @OneToMany(mappedBy = "penalty", fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.REMOVE})
+    @OneToMany(mappedBy = "penalty", fetch = FetchType.LAZY, cascade = {CascadeType.ALL})
     private List<PenaltyWalletOperation> penaltyWalletOperations = new ArrayList<>();
 
+    public void addPenaltyWalletOperation(PenaltyWalletOperation wo){
+    	penaltyWalletOperations.add(wo);
+    	wo.setAuditable(this.getAuditable());
+    	wo.setPenalty(this);
+    }
+    
+    public void removePenaltyWalletOperation(PenaltyWalletOperation wo){
+    	penaltyWalletOperations.remove(wo);
+    	wo.setPenalty(null);
+    }
+    
 	public Subscription getSubscription() {
 		return subscription;
 	}
