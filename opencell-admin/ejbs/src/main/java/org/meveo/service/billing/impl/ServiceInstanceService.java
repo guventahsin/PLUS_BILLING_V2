@@ -43,6 +43,7 @@ import org.meveo.model.billing.Subscription;
 import org.meveo.model.billing.SubscriptionStatusEnum;
 import org.meveo.model.billing.SubscriptionTerminationReason;
 import org.meveo.model.billing.UsageChargeInstance;
+import org.meveo.model.billing.WalletOperationStatusEnum;
 import org.meveo.model.catalog.CalendarJoin;
 import org.meveo.model.catalog.OfferTemplate;
 import org.meveo.model.catalog.OneShotChargeTemplate;
@@ -585,11 +586,11 @@ public class ServiceInstanceService extends BusinessService<ServiceInstance> {
 	                endDate = serviceInstance.getEndAgreementDate();
 	            }
 	            log.debug("chargeDate={}, storedNextChargeDate={}, enDate {}", chargeDate, storedNextChargeDate, endDate);
-	            if (endDate.after(nextChargeDate)) {
+	            if (terminationDate.after(chargeDate)) {
 	                if (!recurringChargeInstance.getRecurringChargeTemplate().getApplyInAdvance()) {
-	                    walletOperationService.applyNotAppliedinAdvanceReccuringCharge(recurringChargeInstance, false, recurringChargeInstance.getRecurringChargeTemplate(), endDate);
+	                    walletOperationService.applyNotAppliedinAdvanceReccuringCharge(recurringChargeInstance, false, recurringChargeInstance.getRecurringChargeTemplate(), terminationDate, WalletOperationStatusEnum.OPEN);
 	                } else {
-	                    walletOperationService.applyReccuringCharge(recurringChargeInstance, false, recurringChargeInstance.getRecurringChargeTemplate(), false);
+	                    walletOperationService.applyReccuringCharge(recurringChargeInstance, false, recurringChargeInstance.getRecurringChargeTemplate(), false, WalletOperationStatusEnum.OPEN);
 	                }
 	            } else if (applyReimbursment) {
 	                Date endAgreementDate = recurringChargeInstance.getServiceInstance().getEndAgreementDate();

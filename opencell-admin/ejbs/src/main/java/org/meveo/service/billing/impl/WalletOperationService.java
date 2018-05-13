@@ -64,6 +64,7 @@ import org.meveo.model.billing.Tax;
 import org.meveo.model.billing.TradingCountry;
 import org.meveo.model.billing.TradingCurrency;
 import org.meveo.model.billing.UserAccount;
+import org.meveo.model.billing.VirtualRecurringCharge;
 import org.meveo.model.billing.WalletInstance;
 import org.meveo.model.billing.WalletOperation;
 import org.meveo.model.billing.WalletOperationStatusEnum;
@@ -406,7 +407,8 @@ public class WalletOperationService extends BusinessService<WalletOperation> {
 				orderNumberOverride != null
 						? (orderNumberOverride.equals(ChargeInstance.NO_ORDER_NUMBER) ? null : orderNumberOverride)
 						: chargeInstance.getOrderNumber(),
-				null, null, null, false, isVirtual);
+				null, null, null, false, isVirtual
+				, WalletOperationStatusEnum.OPEN);
 
 		return chargeApplication;
 	}
@@ -518,7 +520,8 @@ public class WalletOperationService extends BusinessService<WalletOperation> {
 				chargeInstance.getAmountWithTax(), chargeInstance.getQuantity(), null, currency, countryId,
 				tax.getPercent(), null, null, invoiceSubCategory, chargeInstance.getCriteria1(),
 				chargeInstance.getCriteria2(), chargeInstance.getCriteria3(), chargeInstance.getOrderNumber(), null,
-				null, null, false, isVirtual);
+				null, null, false, isVirtual
+				, WalletOperationStatusEnum.OPEN);
 
 		return chargeApplication;
 	}
@@ -717,7 +720,8 @@ public class WalletOperationService extends BusinessService<WalletOperation> {
 					chargeInstance.getAmountWithTax(), inputQuantity, null, currency, countryId, tax.getPercent(), null,
 					nextapplicationDate, recurringChargeTemplate.getInvoiceSubCategory(), chargeInstance.getCriteria1(),
 					chargeInstance.getCriteria2(), chargeInstance.getCriteria3(), chargeInstance.getOrderNumber(),
-					applicationDate, DateUtils.addDaysToDate(nextapplicationDate, -1), null, false, false);
+					applicationDate, DateUtils.addDaysToDate(nextapplicationDate, -1), null, false, false,
+					WalletOperationStatusEnum.OPEN);
 		} else {
 			String languageCode = chargeInstance.getUserAccount().getBillingAccount().getTradingLanguage().getLanguage()
 					.getLanguageCode();
@@ -729,7 +733,8 @@ public class WalletOperationService extends BusinessService<WalletOperation> {
 					recurringChargeTemplate.getInvoiceSubCategory(), chargeInstance.getCriteria1(),
 					chargeInstance.getCriteria2(), chargeInstance.getCriteria3(), chargeInstance.getOrderNumber(),
 					applicationDate, DateUtils.addDaysToDate(nextapplicationDate, -1), null,
-					chargeInstance.getUserAccount());
+					chargeInstance.getUserAccount()
+					, WalletOperationStatusEnum.OPEN);
 		}
 		return result;
 	}
@@ -934,7 +939,7 @@ public class WalletOperationService extends BusinessService<WalletOperation> {
 					nextapplicationDate, invoiceSubCategory, chargeInstance.getCriteria1(),
 					chargeInstance.getCriteria2(), chargeInstance.getCriteria3(), chargeInstance.getOrderNumber(),
 					periodStart, DateUtils.addDaysToDate(nextapplicationDate, -1),
-					ChargeApplicationModeEnum.REIMBURSMENT, false, false);
+					ChargeApplicationModeEnum.REIMBURSMENT, false, false, WalletOperationStatusEnum.OPEN);
 
 			chargeWalletOperation(chargeApplication);
 			// create(chargeApplication);
@@ -946,7 +951,7 @@ public class WalletOperationService extends BusinessService<WalletOperation> {
 					applicationDate, nextapplicationDate, nextChargeDate);
 
 			if (nextChargeDate != null && nextChargeDate.getTime() > nextapplicationDate.getTime()) {
-				applyReccuringCharge(chargeInstance, true, recurringChargeTemplate, false);
+				applyReccuringCharge(chargeInstance, true, recurringChargeTemplate, false, WalletOperationStatusEnum.OPEN);
 			}
 		} else {
 			Date nextChargeDate = chargeInstance.getChargeDate();
@@ -954,7 +959,7 @@ public class WalletOperationService extends BusinessService<WalletOperation> {
 					applicationDate, nextapplicationDate, nextChargeDate);
 
 			if (nextChargeDate != null && nextChargeDate.getTime() > nextapplicationDate.getTime()) {
-				applyNotAppliedinAdvanceReccuringCharge(chargeInstance, true, recurringChargeTemplate, null);
+				applyNotAppliedinAdvanceReccuringCharge(chargeInstance, true, recurringChargeTemplate, null, WalletOperationStatusEnum.OPEN);
 			}
 		}
 	}
@@ -975,7 +980,7 @@ public class WalletOperationService extends BusinessService<WalletOperation> {
 	 *             business exeption.
 	 */
 	public List<WalletOperation> applyReccuringCharge(RecurringChargeInstance chargeInstance, boolean reimbursement,
-			RecurringChargeTemplate recurringChargeTemplate, boolean forSchedule) throws BusinessException {
+			RecurringChargeTemplate recurringChargeTemplate, boolean forSchedule, WalletOperationStatusEnum walletOperationStatus) throws BusinessException {
 		long startDate = System.currentTimeMillis();
 		Date applicationDate = chargeInstance.getNextChargeDate();
 
@@ -1063,7 +1068,7 @@ public class WalletOperationService extends BusinessService<WalletOperation> {
 					chargeInstance.getCriteria3(), chargeInstance.getOrderNumber(), applicationDate,
 					DateUtils.addDaysToDate(nextapplicationDate, -1),
 					reimbursement ? ChargeApplicationModeEnum.REIMBURSMENT : ChargeApplicationModeEnum.SUBSCRIPTION,
-					forSchedule, false);
+					forSchedule, false, walletOperationStatus);
 			walletOperations.add(walletOperation);
 
 			walletOperation.setSubscriptionDate(serviceInstance.getSubscriptionDate());
@@ -1159,7 +1164,7 @@ public class WalletOperationService extends BusinessService<WalletOperation> {
 					nextapplicationDate, invoiceSubCategory, chargeInstance.getCriteria1(),
 					chargeInstance.getCriteria2(), chargeInstance.getCriteria3(), chargeInstance.getOrderNumber(),
 					applicationDate, DateUtils.addDaysToDate(nextapplicationDate, -1),
-					ChargeApplicationModeEnum.SUBSCRIPTION, false, true);
+					ChargeApplicationModeEnum.SUBSCRIPTION, false, true, WalletOperationStatusEnum.OPEN);
 
 			walletOperations.add(walletOperation);
 
@@ -1169,9 +1174,10 @@ public class WalletOperationService extends BusinessService<WalletOperation> {
 		return walletOperations;
 	}
 
-	public void applyNotAppliedinAdvanceReccuringCharge(RecurringChargeInstance chargeInstance, boolean reimbursement,
-			RecurringChargeTemplate recurringChargeTemplate, Date terminationDate) throws BusinessException {
+	public List<WalletOperation> applyNotAppliedinAdvanceReccuringCharge(RecurringChargeInstance chargeInstance, boolean reimbursement,
+			RecurringChargeTemplate recurringChargeTemplate, Date terminationDate, WalletOperationStatusEnum walletOperationStatus) throws BusinessException {
 
+		List<WalletOperation> walletOperations = new ArrayList<WalletOperation>();
 		long startDate = System.currentTimeMillis();
 
 		Date applicationDate = chargeInstance.getChargeDate();
@@ -1316,13 +1322,14 @@ public class WalletOperationService extends BusinessService<WalletOperation> {
 					chargeInstance.getAmountWithoutTax(), chargeInstance.getAmountWithTax(), inputQuantity, null,
 					currency, countryId, totalTaxPercent, null, chargeDateEnd, invoiceSubCategory,
 					chargeInstance.getCriteria1(), chargeInstance.getCriteria2(), chargeInstance.getCriteria3(),
-					chargeInstance.getOrderNumber(), chargeDateStart, DateUtils.addDaysToDate(chargeDateEnd, -1),
+					chargeInstance.getOrderNumber(), chargeDateStart, chargeDateEnd,
 					reimbursement ? ChargeApplicationModeEnum.REIMBURSMENT : ChargeApplicationModeEnum.SUBSCRIPTION,
-					false, false);
+					false, false, walletOperationStatus);
 
 			walletOperation.setSubscriptionDate(chargeInstance.getServiceInstance().getSubscriptionDate());
 
 			List<WalletOperation> oprations = chargeWalletOperation(walletOperation);
+			walletOperations.addAll(oprations);
 			chargeInstance.getWalletOperations().addAll(oprations);
 			if (!getEntityManager().contains(walletOperation)) {
 				log.error("wtf wallet operation is already detached");
@@ -1358,209 +1365,211 @@ public class WalletOperationService extends BusinessService<WalletOperation> {
 		}
 
 		log.debug("Before exit:" + (System.currentTimeMillis() - startDate));
+		
+		return walletOperations;
 	}
 
-	// public void
-	// applyNotAppliedinAdvanceReccuringCharge(RecurringChargeInstance
-	// chargeInstance, boolean reimbursement, RecurringChargeTemplate
-	// recurringChargeTemplate)
-	// throws BusinessException {
-	//
-	//
-	// long startDate = System.currentTimeMillis();
-	//
-	// Date applicationDate = chargeInstance.getChargeDate();
-	// Calendar cal = recurringChargeTemplate.getCalendar();
-	// if (chargeInstance.getServiceInstance() != null) {
-	// cal.setInitDate(chargeInstance.getServiceInstance().getSubscriptionDate());
-	// }
-	//
-	// if (reimbursement) {
-	// applicationDate =
-	// cal.nextCalendarDate(chargeInstance.getTerminationDate());
-	// }
-	//
-	// if (applicationDate == null) {
-	// throw new IncorrectChargeInstanceException("ChargeDate is null.");
-	// }
-	//
-	// Date nextChargeDate = reimbursement ? chargeInstance.getChargeDate() :
-	// chargeInstance.getNextChargeDate();
-	//
-	// InvoiceSubCategory invoiceSubCategory =
-	// recurringChargeTemplate.getInvoiceSubCategory();
-	// if (invoiceSubCategory == null) {
-	// throw new IncorrectChargeTemplateException("InvoiceSubCategory is null
-	// for chargeTemplate code=" + recurringChargeTemplate.getCode());
-	// }
-	//
-	// TradingCurrency currency = chargeInstance.getCurrency();
-	// if (currency == null) {
-	// throw new IncorrectChargeTemplateException(
-	// "No currency exists for customerAccount id=" +
-	// chargeInstance.getUserAccount().getBillingAccount().getCustomerAccount().getId());
-	// }
-	//
-	// TradingCountry country = chargeInstance.getCountry();
-	// if (country == null) {
-	// throw new IncorrectChargeTemplateException("No country exists for
-	// billingAccount id=" +
-	// chargeInstance.getUserAccount().getBillingAccount().getId());
-	// }
-	// Long countryId = country.getId();
-	//
-	// InvoiceSubcategoryCountry invoiceSubcategoryCountry =
-	// invoiceSubCategoryCountryService.findInvoiceSubCategoryCountry(invoiceSubCategory.getId(),
-	// countryId,
-	// applicationDate);
-	// if (invoiceSubcategoryCountry == null) {
-	// throw new IncorrectChargeTemplateException(
-	// "No invoiceSubcategoryCountry exists for invoiceSubCategory code=" +
-	// invoiceSubCategory.getCode() + " and trading country=" +
-	// country.getCountryCode());
-	// }
-	//
-	// Tax tax = invoiceSubcategoryCountry.getTax();
-	// if (tax == null) {
-	// tax =
-	// invoiceSubCategoryService.evaluateTaxCodeEL(invoiceSubcategoryCountry.getTaxCodeEL(),
-	// chargeInstance.getUserAccount(),
-	// chargeInstance.getUserAccount().getBillingAccount(), null);
-	// if (tax == null) {
-	// throw new IncorrectChargeTemplateException("Tax is null for
-	// invoiceSubCategoryCountry id=" + invoiceSubcategoryCountry.getId());
-	// }
-	// }
-	//
-	// while (applicationDate.getTime() < nextChargeDate.getTime()) {
-	//// Date nextapplicationDate = cal.nextCalendarDate(applicationDate); --
-	// guven
-	// Date nextapplicationDate = cal.nextPeriodStartDate(applicationDate);
-	// log.debug("ApplyNotAppliedinAdvanceReccuringCharge next step for {},
-	// applicationDate={}, nextApplicationDate={},nextApplicationDate={}",
-	// chargeInstance.getId(),
-	// applicationDate, nextapplicationDate, nextChargeDate);
-	//
-	// //Date previousapplicationDate =
-	// cal.previousCalendarDate(applicationDate); -- guven
-	// Date previousapplicationDate =
-	// cal.previousPeriodEndDate(applicationDate);
-	// previousapplicationDate =
-	// DateUtils.setTimeToZero(previousapplicationDate);
-	// log.debug("ApplyNotAppliedinAdvanceReccuringCharge applicationDate={},
-	// nextapplicationDate={},previousapplicationDate={}", applicationDate,
-	// nextapplicationDate,
-	// previousapplicationDate);
-	//
-	// BigDecimal inputQuantity = chargeInstance.getQuantity();
-	//
-	// ApplicationTypeEnum applicationTypeEnum = ApplicationTypeEnum.RECURRENT;
-	// Date periodStart = applicationDate;
-	// // n'appliquer le prorata que dans le cas de la 1ere application de
-	// // charges echues
-	// log.debug("ApplyNotAppliedinAdvanceReccuringCharge
-	// chargeInstance.getWalletOperations().size()={}",
-	// chargeInstance.getWalletOperations().size());
-	// if (/*chargeInstance.getWalletOperations().size() == 0 &&
-	// */recurringChargeTemplate.getSubscriptionProrata()) {
-	// applicationTypeEnum = ApplicationTypeEnum.PRORATA_SUBSCRIPTION;
-	// double prorataRatio = 1.0;
-	//// double part1 = DateUtils.daysBetween(periodStart, nextapplicationDate);
-	// --guven
-	//// double part2 = DateUtils.daysBetween(previousapplicationDate,
-	// nextapplicationDate); -- guven
-	//
-	// CalendarJoin calendarJoin = new CalendarJoin();
-	// calendarJoin.setJoinCalendar2(recurringChargeTemplate.getCalendar());
-	// calendarJoin.setJoinCalendar1(chargeInstance.getUserAccount().getBillingAccount().getBillingCycle().getCalendar());
-	// calendarJoin.setJoinType(CalendarJoinTypeEnum.INTERSECT);
-	//
-	// Date periodEnd = calendarJoin.nextCalendarDate(applicationDate);
-	//
-	// double part1 = DateUtils.daysBetween(periodStart, periodEnd);
-	// double part2 = DateUtils.daysBetween(previousapplicationDate,
-	// nextapplicationDate);
-	//
-	// nextapplicationDate = periodEnd; // guven
-	//
-	// if (part2 > 0) {
-	// prorataRatio = part1 / part2;
-	// } else {
-	// log.error("ApplyNotAppliedinAdvanceReccuringCharge Error in calendar
-	// dates : nextapplicationDate={}, previousapplicationDate={}",
-	// nextapplicationDate,
-	// previousapplicationDate);
-	// }
-	// inputQuantity = inputQuantity.multiply(new BigDecimal(prorataRatio +
-	// ""));
-	// log.debug("part1={}, part2={}, prorataRatio={} -> quantity", part1,
-	// part2, prorataRatio, inputQuantity);
-	// }
-	//
-	// String param2 = (reimbursement ? str_tooPerceived + " " : " ") +
-	// sdf.format(applicationDate) + (reimbursement ? " / " : " au ")
-	// + sdf.format(DateUtils.addDaysToDate(nextapplicationDate, -1));
-	//
-	// log.debug("param2={}", param2);
-	//
-	// log.debug("ApplyNotAppliedinAdvanceReccuringCharge :
-	// nextapplicationDate={}, param2={}", nextapplicationDate, param2);
-	//
-	// if (reimbursement) {
-	// inputQuantity = inputQuantity.negate();
-	// }
-	//
-	// log.debug("Before walletOperation:" + (System.currentTimeMillis() -
-	// startDate));
-	//
-	// WalletOperation walletOperation =
-	// chargeApplicationRatingService.rateChargeApplication(chargeInstance,
-	// reimbursement ? ApplicationTypeEnum.PRORATA_TERMINATION :
-	// applicationTypeEnum, nextapplicationDate,
-	// chargeInstance.getAmountWithoutTax(),
-	// chargeInstance.getAmountWithTax(), inputQuantity, null, currency,
-	// countryId, tax.getPercent(), null, nextapplicationDate,
-	// invoiceSubCategory,
-	// chargeInstance.getCriteria1(), chargeInstance.getCriteria2(),
-	// chargeInstance.getCriteria3(), chargeInstance.getOrderNumber(),
-	// applicationDate,
-	// DateUtils.addDaysToDate(nextapplicationDate, -1), reimbursement ?
-	// ChargeApplicationModeEnum.REIMBURSMENT :
-	// ChargeApplicationModeEnum.SUBSCRIPTION, false, false);
-	//
-	// log.debug("After walletOperation:" + (System.currentTimeMillis() -
-	// startDate));
-	//
-	// walletOperation.setSubscriptionDate(chargeInstance.getServiceInstance().getSubscriptionDate());
-	//
-	// List<WalletOperation> oprations = chargeWalletOperation(walletOperation);
-	//
-	// log.debug("After chargeWalletOperation:" + (System.currentTimeMillis() -
-	// startDate));
-	//
-	// // create(walletOperation);
-	// // em.flush();
-	// // em.refresh(chargeInstance);
-	// chargeInstance.setChargeDate(applicationDate);
-	// chargeInstance.getWalletOperations().addAll(oprations);
-	// if (!getEntityManager().contains(walletOperation)) {
-	// log.error("wtf wallet operation is already detached");
-	// }
-	// if (!getEntityManager().contains(chargeInstance)) {
-	// log.error("wow chargeInstance is detached");
-	// getEntityManager().merge(chargeInstance);
-	// }
-	// applicationDate = nextapplicationDate;
-	// }
-	//
-	// //Date nextapplicationDate = cal.nextCalendarDate(applicationDate); --
-	// guven
-	// chargeInstance.setNextChargeDate(nextapplicationDate);
-	// chargeInstance.setChargeDate(applicationDate);
-	//
-	// log.debug("Before exit:" + (System.currentTimeMillis() - startDate));
-	// }
+	
+	public VirtualRecurringCharge applyVirtualNotAppliedinAdvanceReccuringCharge(RecurringChargeInstance chargeInstance, boolean reimbursement,
+			RecurringChargeTemplate recurringChargeTemplate, Date terminationDate, WalletOperationStatusEnum walletOperationStatus,
+			Date extChargeDate, Date extNextChargeDate) throws BusinessException {
 
+		VirtualRecurringCharge virtualRecurringCharge = new VirtualRecurringCharge();
+		List<WalletOperation> walletOperations = new ArrayList<WalletOperation>();
+		long startDate = System.currentTimeMillis();
+
+		Date applicationDate = extChargeDate;
+		Calendar cal = recurringChargeTemplate.getCalendar();
+		if (chargeInstance.getServiceInstance() != null) {
+			cal.setInitDate(chargeInstance.getServiceInstance().getSubscriptionDate());
+		}
+
+		if (reimbursement) {
+			applicationDate = cal.nextCalendarDate(chargeInstance.getTerminationDate());
+		}
+
+		if (applicationDate == null) {
+			throw new IncorrectChargeInstanceException("ChargeDate is null.");
+		}
+
+		InvoiceSubCategory invoiceSubCategory = recurringChargeTemplate.getInvoiceSubCategory();
+		if (invoiceSubCategory == null) {
+			throw new IncorrectChargeTemplateException(
+					"InvoiceSubCategory is null for chargeTemplate code=" + recurringChargeTemplate.getCode());
+		}
+
+		TradingCurrency currency = chargeInstance.getCurrency();
+		if (currency == null) {
+			throw new IncorrectChargeTemplateException("No currency exists for customerAccount id="
+					+ chargeInstance.getUserAccount().getBillingAccount().getCustomerAccount().getId());
+		}
+
+		TradingCountry country = chargeInstance.getCountry();
+		if (country == null) {
+			throw new IncorrectChargeTemplateException("No country exists for billingAccount id="
+					+ chargeInstance.getUserAccount().getBillingAccount().getId());
+		}
+		Long countryId = country.getId();
+
+		InvoiceSubcategoryCountry invoiceSubcategoryCountry = invoiceSubCategoryCountryService
+				.findInvoiceSubCategoryCountry(invoiceSubCategory.getId(), countryId, applicationDate);
+		if (invoiceSubcategoryCountry == null) {
+			throw new IncorrectChargeTemplateException(
+					"No invoiceSubcategoryCountry exists for invoiceSubCategory code=" + invoiceSubCategory.getCode()
+							+ " and trading country=" + country.getCountryCode());
+		}
+
+		Tax tax = invoiceSubcategoryCountry.getTax();
+		if (tax == null) {
+			tax = invoiceSubCategoryService.evaluateTaxCodeEL(invoiceSubcategoryCountry.getTaxCodeEL(),
+					chargeInstance.getUserAccount(), chargeInstance.getUserAccount().getBillingAccount(), null);
+			if (tax == null) {
+				throw new IncorrectChargeTemplateException(
+						"Tax is null for invoiceSubCategoryCountry id=" + invoiceSubcategoryCountry.getId());
+			}
+		}
+
+		List<InvoiceSubcategoryCountry> invoiceSubcategoryCountries = invoiceSubCategoryCountryService.
+					findInvoiceSubCategoryCountries (invoiceSubCategory.getId(), countryId, applicationDate);
+		
+		BigDecimal totalTaxPercent = new BigDecimal(0);
+		for (InvoiceSubcategoryCountry invSubcategoryCountry : invoiceSubcategoryCountries)
+		{
+			totalTaxPercent = totalTaxPercent.add(invSubcategoryCountry.getTax().getPercent()); 
+		}
+		
+		Date chargeDateStart = extChargeDate;
+		Date chargeDateEnd = reimbursement ? extChargeDate : extNextChargeDate;
+
+		cal.setInitDate(chargeInstance.getServiceInstance().getSubscriptionDate());
+		Date  periodStart = DateUtils.setTimeToZero(cal.previousPeriodEndDate(chargeDateStart));
+		Date periodEnd = DateUtils.setTimeToZero(cal.nextPeriodStartDate(chargeDateStart));
+		
+		chargeInstance.getUserAccount().getBillingAccount().getBillingCycle().getCalendar()
+				.setInitDate(chargeInstance.getServiceInstance().getSubscriptionDate());
+		Date maxChargeDate = chargeInstance.getUserAccount().getBillingAccount().getBillingCycle().getCalendar()
+				.nextCalendarDate(chargeDateStart);
+
+		int durationTermInMonth = 0;
+		boolean isLastChargingApplied = false;
+		boolean isLastChargingWillBeApplied = false;
+		Date durationTermInMonthDate = null;
+		if (chargeInstance.getRecurringChargeTemplate().getDurationTermInMonth() != null) {
+			durationTermInMonth = chargeInstance.getRecurringChargeTemplate().getDurationTermInMonth();
+			if (durationTermInMonth > 0) {
+				durationTermInMonthDate = DateUtils
+						.addMonthsToDate(chargeInstance.getServiceInstance().getSubscriptionDate(), durationTermInMonth);
+				Integer agreementExtensionDays = chargeInstance.getServiceInstance().getSubscription()
+						.getAgreementExtensionDays();
+				if (agreementExtensionDays != null && agreementExtensionDays > 0) {
+					durationTermInMonthDate = DateUtils.addDaysToDate(durationTermInMonthDate, agreementExtensionDays);
+				}
+				if (chargeDateEnd != null && (chargeDateEnd.after(durationTermInMonthDate) ||  chargeDateEnd.equals(durationTermInMonthDate))) {
+					chargeDateEnd = durationTermInMonthDate;
+					maxChargeDate = durationTermInMonthDate;
+					isLastChargingWillBeApplied = true;
+				}
+			}
+		}
+
+		if (terminationDate != null && terminationDate.before(chargeDateEnd)){
+			chargeDateEnd = terminationDate;
+			maxChargeDate = terminationDate;
+			isLastChargingWillBeApplied = true;
+		}
+		
+		CalendarJoin calendarJoin = new CalendarJoin();
+		calendarJoin.setJoinCalendar2(recurringChargeTemplate.getCalendar());
+		calendarJoin.setJoinCalendar1(chargeInstance.getUserAccount().getBillingAccount().getBillingCycle().getCalendar());
+		calendarJoin.setJoinType(CalendarJoinTypeEnum.INTERSECT);
+		
+		while (chargeDateEnd != null && chargeDateStart != null && periodStart != null & periodEnd != null
+				&& chargeDateStart.getTime() < maxChargeDate.getTime()) {
+
+			if (isLastChargingWillBeApplied){
+				isLastChargingApplied = true;
+			}
+			
+			BigDecimal inputQuantity = chargeInstance.getQuantity();
+
+			ApplicationTypeEnum applicationTypeEnum = ApplicationTypeEnum.RECURRENT;
+
+			if (recurringChargeTemplate.getSubscriptionProrata()) {
+				applicationTypeEnum = ApplicationTypeEnum.PRORATA_SUBSCRIPTION;
+				double prorataRatio = 1.0;
+
+				double part1 = DateUtils.daysBetween(chargeDateStart, chargeDateEnd);
+				double part2 = DateUtils.daysBetween(periodStart, periodEnd);
+
+				if (part2 > 0) {
+					prorataRatio = part1 / part2;
+				} else {
+					log.error(
+							"ApplyNotAppliedinAdvanceReccuringCharge Error in calendar dates : periodStart={}, periodEnd={}",
+							periodStart, periodEnd);
+				}
+				inputQuantity = inputQuantity.multiply(new BigDecimal(prorataRatio + ""));
+			}
+
+			if (reimbursement) {
+				inputQuantity = inputQuantity.negate();
+			}
+
+			WalletOperation walletOperation = chargeApplicationRatingService.rateChargeApplication(chargeInstance,
+					reimbursement ? ApplicationTypeEnum.PRORATA_TERMINATION : applicationTypeEnum, chargeDateStart,
+					chargeInstance.getAmountWithoutTax(), chargeInstance.getAmountWithTax(), inputQuantity, null,
+					currency, countryId, totalTaxPercent, null, chargeDateEnd, invoiceSubCategory,
+					chargeInstance.getCriteria1(), chargeInstance.getCriteria2(), chargeInstance.getCriteria3(),
+					chargeInstance.getOrderNumber(), chargeDateStart, chargeDateEnd,
+					reimbursement ? ChargeApplicationModeEnum.REIMBURSMENT : ChargeApplicationModeEnum.SUBSCRIPTION,
+					false, false, walletOperationStatus);
+
+			walletOperation.setSubscriptionDate(chargeInstance.getServiceInstance().getSubscriptionDate());
+
+			List<WalletOperation> oprations = chargeWalletOperation(walletOperation);
+			walletOperations.addAll(oprations);
+			chargeInstance.getWalletOperations().addAll(oprations);
+			if (!getEntityManager().contains(walletOperation)) {
+				log.error("wtf wallet operation is already detached");
+			}
+			if (!getEntityManager().contains(chargeInstance)) {
+				log.error("wow chargeInstance is detached");
+				getEntityManager().merge(chargeInstance);
+			}
+			chargeDateStart = chargeDateEnd;
+			calendarJoin.setInitDate(chargeInstance.getServiceInstance().getSubscriptionDate());
+			chargeDateEnd = calendarJoin.nextCalendarDate(chargeDateStart);
+			if (durationTermInMonthDate != null) {
+				if (chargeDateEnd.after(durationTermInMonthDate)) {
+					chargeDateEnd = durationTermInMonthDate;
+					isLastChargingWillBeApplied = true;
+				}
+			}
+			periodStart = cal.previousPeriodEndDate(chargeDateStart);
+			periodStart = DateUtils.setTimeToZero(periodStart);
+			periodEnd = cal.nextPeriodStartDate(chargeDateStart);
+			periodEnd = DateUtils.setTimeToZero(periodEnd);
+		}
+
+		virtualRecurringCharge.setChargeDate(chargeDateStart);
+		chargeInstance.getRecurringChargeTemplate().getCalendar()
+				.setInitDate(chargeInstance.getServiceInstance().getSubscriptionDate());
+		if (isLastChargingApplied) {
+			virtualRecurringCharge.setNextChargeDate(null);
+			virtualRecurringCharge.setStatus(InstanceStatusEnum.CLOSED);
+		} else {
+			virtualRecurringCharge.setNextChargeDate(
+					chargeInstance.getRecurringChargeTemplate().getCalendar().nextCalendarDate(chargeDateStart));
+		}
+
+		log.debug("Before exit:" + (System.currentTimeMillis() - startDate));
+		
+		virtualRecurringCharge.getWalletOperations().addAll(walletOperations);
+		
+		return virtualRecurringCharge;
+	}
+
+	
 	public void applyChargeAgreement(RecurringChargeInstance chargeInstance,
 			RecurringChargeTemplate recurringChargeTemplate, Date endAgreementDate) throws BusinessException {
 
@@ -1665,7 +1674,7 @@ public class WalletOperationService extends BusinessService<WalletOperation> {
 					inputQuantity, null, currency, countryId, tax.getPercent(), null, nextapplicationDate,
 					invoiceSubCategory, chargeInstance.getCriteria1(), chargeInstance.getCriteria2(),
 					chargeInstance.getCriteria3(), chargeInstance.getOrderNumber(), applicationDate, endDate,
-					ChargeApplicationModeEnum.AGREEMENT, false, false);
+					ChargeApplicationModeEnum.AGREEMENT, false, false, WalletOperationStatusEnum.OPEN);
 
 			chargeWalletOperation(chargeApplication);
 

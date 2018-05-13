@@ -39,8 +39,10 @@ import org.meveo.model.billing.RecurringChargeInstance;
 import org.meveo.model.billing.ServiceInstance;
 import org.meveo.model.billing.Subscription;
 import org.meveo.model.billing.SubscriptionStatusEnum;
+import org.meveo.model.billing.VirtualRecurringCharge;
 import org.meveo.model.billing.WalletInstance;
 import org.meveo.model.billing.WalletOperation;
+import org.meveo.model.billing.WalletOperationStatusEnum;
 import org.meveo.model.catalog.RecurringChargeTemplate;
 import org.meveo.model.catalog.ServiceChargeTemplateRecurring;
 import org.meveo.model.catalog.WalletTemplate;
@@ -210,9 +212,9 @@ public class RecurringChargeInstanceService extends BusinessService<RecurringCha
         
         if (terminationDate.after(recurringChargeInstance.getChargeDate())) {
             if (!recurringChargeInstance.getRecurringChargeTemplate().getApplyInAdvance()) {
-                walletOperationService.applyNotAppliedinAdvanceReccuringCharge(recurringChargeInstance, false, recurringChargeInstance.getRecurringChargeTemplate(), terminationDate);
+                walletOperationService.applyNotAppliedinAdvanceReccuringCharge(recurringChargeInstance, false, recurringChargeInstance.getRecurringChargeTemplate(), terminationDate, WalletOperationStatusEnum.OPEN);
             } else {
-                walletOperationService.applyReccuringCharge(recurringChargeInstance, false, recurringChargeInstance.getRecurringChargeTemplate(), false);
+                walletOperationService.applyReccuringCharge(recurringChargeInstance, false, recurringChargeInstance.getRecurringChargeTemplate(), false, WalletOperationStatusEnum.OPEN);
             }
         }
         
@@ -244,7 +246,6 @@ public class RecurringChargeInstanceService extends BusinessService<RecurringCha
         long startDate = System.currentTimeMillis();
         int MaxRecurringRatingHistory = Integer.parseInt(ParamBean.getInstance().getProperty("rating.recurringMaxRetry", "100"));
         int nbRating = 0;
-
         try {
             RecurringChargeInstance activeRecurringChargeInstance = findById(chargeInstanceId);
 
@@ -282,9 +283,9 @@ public class RecurringChargeInstanceService extends BusinessService<RecurringCha
                 nbRating++;
                 log.info("chargeDate={}", chargeDate);
                 if (!recurringChargeTemplate.getApplyInAdvance()) {
-                    walletOperationService.applyNotAppliedinAdvanceReccuringCharge(activeRecurringChargeInstance, false, recurringChargeTemplate, null);
+                	walletOperationService.applyNotAppliedinAdvanceReccuringCharge(activeRecurringChargeInstance, false, recurringChargeTemplate, null, WalletOperationStatusEnum.OPEN);
                 } else {
-                    walletOperationService.applyReccuringCharge(activeRecurringChargeInstance, false, recurringChargeTemplate, false);
+                	walletOperationService.applyReccuringCharge(activeRecurringChargeInstance, false, recurringChargeTemplate, false, WalletOperationStatusEnum.OPEN);
                 }
 
                 log.debug("After applyReccuringCharge:" + (System.currentTimeMillis() - startDate));
@@ -310,9 +311,9 @@ public class RecurringChargeInstanceService extends BusinessService<RecurringCha
                     while (nextChargeDate != null && chargeDate.getTime() <= endContractDate.getTime()) {
                         log.info("Schedule applicationDate={}", chargeDate);
                         if (!recurringChargeTemplate.getApplyInAdvance()) {
-                            walletOperationService.applyNotAppliedinAdvanceReccuringCharge(activeRecurringChargeInstance, false, recurringChargeTemplate, null);
+                            walletOperationService.applyNotAppliedinAdvanceReccuringCharge(activeRecurringChargeInstance, false, recurringChargeTemplate, null, WalletOperationStatusEnum.OPEN);
                         } else {
-                            walletOperationService.applyReccuringCharge(activeRecurringChargeInstance, false, recurringChargeTemplate, true);
+                            walletOperationService.applyReccuringCharge(activeRecurringChargeInstance, false, recurringChargeTemplate, true, WalletOperationStatusEnum.OPEN);
                         }
                         log.debug("chargeDate {},nextChargeDate {},  wo size {}", activeRecurringChargeInstance.getChargeDate(), activeRecurringChargeInstance.getNextChargeDate(),
                             activeRecurringChargeInstance.getWalletOperations().size());
@@ -331,6 +332,55 @@ public class RecurringChargeInstanceService extends BusinessService<RecurringCha
             throw new BusinessException(e);
         }
         return nbRating;
+    }
+    
+    public List<WalletOperation> applyVirtualRecurringCharge(Long chargeInstanceId, Date maxDate, boolean isStrictlyBeforeMaxDate, WalletOperationStatusEnum walletOperationStatus
+    		, Date extChargeDate, Date extNextChargeDate, Date aggreementEndDate) throws BusinessException {
+        long startDate = System.currentTimeMillis();
+        List<WalletOperation> walletOperations = new ArrayList<WalletOperation>();
+        try {
+            RecurringChargeInstance activeRecurringChargeInstance = findById(chargeInstanceId);
+
+            if (!walletOperationService.isChargeMatch(activeRecurringChargeInstance, activeRecurringChargeInstance.getRecurringChargeTemplate().getFilterExpression())) {
+                log.debug("not rating chargeInstance with code={}, filter expression not evaluated to true", activeRecurringChargeInstance.getCode());
+                return walletOperations;
+            }
+
+            RecurringChargeTemplate recurringChargeTemplate = (RecurringChargeTemplate) activeRecurringChargeInstance.getRecurringChargeTemplate();
+            if (recurringChargeTemplate.getCalendar() == null) {
+                // FIXME : should not stop the method execution
+                rejectededChargeProducer.fire(recurringChargeTemplate);
+                log.error("Recurring charge template has no calendar: code=" + recurringChargeTemplate.getCode());
+                throw new BusinessException("Recurring charge template has no calendar: code=" + recurringChargeTemplate.getCode());
+            }
+
+            Date nextChargeDate = extNextChargeDate;
+            Date chargeDate = extChargeDate;
+
+            
+            while (nextChargeDate != null && ((nextChargeDate.getTime() <= maxDate.getTime() && !isStrictlyBeforeMaxDate)
+                    || (chargeDate.getTime() < maxDate.getTime() && isStrictlyBeforeMaxDate))) {
+                
+                List<WalletOperation> wos = new ArrayList<WalletOperation>();
+                VirtualRecurringCharge virtualRecurringCharge = new VirtualRecurringCharge();
+                if (!recurringChargeTemplate.getApplyInAdvance()) {
+                	virtualRecurringCharge = walletOperationService.applyVirtualNotAppliedinAdvanceReccuringCharge(activeRecurringChargeInstance, false, recurringChargeTemplate, aggreementEndDate, walletOperationStatus, chargeDate, nextChargeDate);
+                } else {
+                	wos = walletOperationService.applyReccuringCharge(activeRecurringChargeInstance, false, recurringChargeTemplate, false, walletOperationStatus);
+                }
+
+                walletOperations.addAll(virtualRecurringCharge.getWalletOperations());
+                
+                chargeDate = virtualRecurringCharge.getChargeDate();
+                nextChargeDate = virtualRecurringCharge.getNextChargeDate();
+                
+            }
+
+        } catch (Exception e) {
+            rejectededChargeProducer.fire("RecurringCharge " + chargeInstanceId);
+            throw new BusinessException(e);
+        }
+        return walletOperations;
     }
 
     public int applyRecurringCharge(Long chargeInstanceId, Date maxDate) throws BusinessException {

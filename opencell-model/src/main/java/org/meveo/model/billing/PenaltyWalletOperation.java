@@ -40,8 +40,8 @@ public class PenaltyWalletOperation extends BusinessEntity {
     private WalletOperation walletOperation;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "charge_sub_type")
-    private ChargeSubTypeEnum chargeSubType;
+    @Column(name = "type")
+    private WalletOperationStatusEnum type;
 
   
 	public Penalty getPenalty() {
@@ -60,12 +60,12 @@ public class PenaltyWalletOperation extends BusinessEntity {
 		this.walletOperation = walletOperation;
 	}
 
-	public ChargeSubTypeEnum getChargeSubType() {
-		return chargeSubType;
+	public WalletOperationStatusEnum getType() {
+		return type;
 	}
 
-	public void setChargeSubType(ChargeSubTypeEnum chargeSubType) {
-		this.chargeSubType = chargeSubType;
+	public void setType(WalletOperationStatusEnum type) {
+		this.type = type;
 	}
     
     

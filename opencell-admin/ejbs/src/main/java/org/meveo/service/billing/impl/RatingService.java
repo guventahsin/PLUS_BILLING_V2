@@ -220,7 +220,7 @@ public class RatingService extends BusinessService<WalletOperation> {
             ApplicationTypeEnum applicationType, Date applicationDate, BigDecimal amountWithoutTax, BigDecimal amountWithTax, BigDecimal inputQuantity,
             BigDecimal quantityInChargeUnits, TradingCurrency tCurrency, Long countryId, String languageCode, BigDecimal taxPercent, BigDecimal discountPercent,
             Date nextApplicationDate, InvoiceSubCategory invoiceSubCategory, String criteria1, String criteria2, String criteria3, String orderNumber, Date startdate, Date endDate,
-            ChargeApplicationModeEnum mode, UserAccount userAccount) throws BusinessException {
+            ChargeApplicationModeEnum mode, UserAccount userAccount, WalletOperationStatusEnum walletStatus) throws BusinessException {
 
         long startDate = System.currentTimeMillis();
 
@@ -269,7 +269,7 @@ public class RatingService extends BusinessService<WalletOperation> {
         walletOperation.setEndDate(endDate);
         walletOperation.setOfferCode(offerCode);
         walletOperation.setInvoiceSubCategory(invoiceSubCategory);
-        walletOperation.setStatus(WalletOperationStatusEnum.OPEN);
+        walletOperation.setStatus(walletStatus);
         if (chargeInstance != null) {
             walletOperation.setSeller(chargeInstance.getSeller());
         } else {
@@ -327,7 +327,7 @@ public class RatingService extends BusinessService<WalletOperation> {
     public WalletOperation rateChargeApplication(ChargeInstance chargeInstance, ApplicationTypeEnum applicationType, Date applicationDate, BigDecimal amountWithoutTax,
             BigDecimal amountWithTax, BigDecimal inputQuantity, BigDecimal quantityInChargeUnits, TradingCurrency tCurrency, Long countryId, BigDecimal taxPercent,
             BigDecimal discountPercent, Date nextApplicationDate, InvoiceSubCategory invoiceSubCategory, String criteria1, String criteria2, String criteria3, String orderNumber,
-            Date startdate, Date endDate, ChargeApplicationModeEnum mode, boolean forSchedule, boolean isVirtual) throws BusinessException {
+            Date startdate, Date endDate, ChargeApplicationModeEnum mode, boolean forSchedule, boolean isVirtual, WalletOperationStatusEnum walletStatus) throws BusinessException {
         Date subscriptionDate = null;
 
         if (chargeInstance instanceof RecurringChargeInstance) {
@@ -342,7 +342,7 @@ public class RatingService extends BusinessService<WalletOperation> {
         WalletOperation walletOperation = prerateChargeApplication(chargeInstance.getChargeTemplate(), subscriptionDate,
             subscription == null ? null : subscription.getOffer().getCode(), chargeInstance, applicationType, applicationDate, amountWithoutTax, amountWithTax, inputQuantity,
             quantityInChargeUnits, tCurrency, countryId, languageCode, taxPercent, discountPercent, nextApplicationDate, invoiceSubCategory, criteria1, criteria2, criteria3,
-            orderNumber, startdate, endDate, mode, chargeInstance.getUserAccount());
+            orderNumber, startdate, endDate, mode, chargeInstance.getUserAccount(), walletStatus);
 
         chargeInstance.getWalletOperations().add(walletOperation);
 

@@ -49,7 +49,7 @@ create table billing_penalty_wallet_operation
 	id bigint not null,
 	penalty_id bigint not null,
 	wallet_operation_id bigint not null,
-	charge_sub_type varchar(20) not null,
+	type varchar(20) not null,
 	description varchar(255),
 	version INT, 
 	disabled INT DEFAULT 0 NOT NULL, 

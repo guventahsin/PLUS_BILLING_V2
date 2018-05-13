@@ -58,6 +58,7 @@ import org.meveo.model.billing.Subscription;
 import org.meveo.model.billing.SubscriptionStatusEnum;
 import org.meveo.model.billing.SubscriptionTerminationReason;
 import org.meveo.model.billing.UsageChargeInstance;
+import org.meveo.model.billing.VirtualRecurringCharge;
 import org.meveo.model.billing.WalletOperation;
 import org.meveo.model.billing.WalletOperationStatusEnum;
 import org.meveo.model.catalog.CalendarJoin;
@@ -82,6 +83,11 @@ public class PenaltyService  extends BusinessService<Penalty> {
     @Inject
     private RatedTransactionService ratedTransactionService;
 
+    @Inject
+    private WalletOperationService walletOperationService;
+    
+    @Inject
+    private RecurringChargeInstanceService recurringChargeInstanceService;
     
     public BigDecimal calculatePenalty(Subscription subscription, Date terminationDate) throws BusinessException
     {
@@ -102,16 +108,13 @@ public class PenaltyService  extends BusinessService<Penalty> {
     		if (subscription.getEndAgreementDate().after(terminationDate)){
     			    	    	
     			returnedPenalty = getAppliedTotalDiscountAmount(subscription, terminationDate, attachedPenalty);
-    			BigDecimal totalToBeChargedAmountWithTax = getTotalToBeChargedAmountIfNotSubsTerminated(subscription, terminationDate);
-    			returnedPenalty.setTotalToBeChargedAmountWithTax(totalToBeChargedAmountWithTax);
-    			BigDecimal totalInstallmentAmountWithTax = getTotalRemainingInstallmentAmount(subscription, terminationDate);
-    			returnedPenalty.setTotalInstallmentAmountWithTax(totalInstallmentAmountWithTax);
+    			returnedPenalty = getTotalToBeChargedAndRemainingInstallmentAmount(subscription, terminationDate, returnedPenalty);
 
-    			if (returnedPenalty.getTotalAppliedDiscountAmountWithTax().compareTo(totalToBeChargedAmountWithTax) <= 0 ){
-    				penaltyAmountWithTax = returnedPenalty.getTotalAppliedDiscountAmountWithTax().add(totalInstallmentAmountWithTax);
+    			if (returnedPenalty.getTotalAppliedDiscountAmountWithTax().compareTo(returnedPenalty.getTotalToBeChargedAmountWithTax()) <= 0 ){
+    				penaltyAmountWithTax = returnedPenalty.getTotalAppliedDiscountAmountWithTax().add(returnedPenalty.getTotalInstallmentAmountWithTax());
     			}
     			else{
-    				penaltyAmountWithTax = totalToBeChargedAmountWithTax.add(totalInstallmentAmountWithTax);
+    				penaltyAmountWithTax = returnedPenalty.getTotalToBeChargedAmountWithTax().add(returnedPenalty.getTotalInstallmentAmountWithTax());
     			}
     		}
     		else{
@@ -129,13 +132,6 @@ public class PenaltyService  extends BusinessService<Penalty> {
 	private Penalty getAppliedTotalDiscountAmount(Subscription subscription, Date terminationDate, Penalty penalty) {
 		
 		List<WalletOperation> walletOperations = new ArrayList<WalletOperation>(); 
-
-//		subscription.getServiceInstances()
-//				.forEach( serviceInstance -> serviceInstance.getRecurringChargeInstances()
-//			.stream().filter(recCharge -> recCharge.getRecurringChargeTemplate().getChargeSubType().equals(ChargeSubTypeEnum.DISCOUNT))
-//			.forEach(recCharge -> walletOperations.addAll( recCharge.getWalletOperations().stream()
-//			.filter(wo -> wo.getStatus().equals(WalletOperationStatusEnum.TREATED) && wo.getEndDate().compareTo(terminationDate) <= 0)
-//			.collect(Collectors.toList()))));
 
 		for (ServiceInstance serviceInstance : subscription.getServiceInstances()){
 			for (RecurringChargeInstance recurringChargeInstance : serviceInstance.getRecurringChargeInstances()){
@@ -162,34 +158,172 @@ public class PenaltyService  extends BusinessService<Penalty> {
 			for(RatedTransaction ratedTransaction: billedRatedTransactions){
 				totalDiscountAmountWithTax = totalDiscountAmountWithTax.add(ratedTransaction.getAmountWithTax());
 			}
-			//billedRatedTransactions.forEach(rt -> totalDiscountAmountWithTax.add(rt.getAmountWithTax()));
-			
+
 			for (WalletOperation wo : walletOperations){
 				PenaltyWalletOperation penaltyWalletOperation = new PenaltyWalletOperation();
 				penaltyWalletOperation.setCode("PWO");
 				penaltyWalletOperation.setPenalty(penalty);
-				penaltyWalletOperation.setChargeSubType(ChargeSubTypeEnum.DISCOUNT);
+				penaltyWalletOperation.setType(WalletOperationStatusEnum.APPLIED_DISCOUNT);
 				penaltyWalletOperation.setWalletOperation(wo);
 				penalty.addPenaltyWalletOperation(penaltyWalletOperation);
 			}
-			
-//			List<PenaltyWalletOperation> penaltyWalletOperation = walletOperations
-//					.stream().map(wo -> new PenaltyWalletOperation(penalty, wo, ChargeSubTypeEnum.DISCOUNT) ).collect(Collectors.toList());
-//			penalty.getPenaltyWalletOperations().addAll(penaltyWalletOperation);
 		}
 		
 		penalty.setTotalAppliedDiscountAmountWithTax(totalDiscountAmountWithTax);
 		return penalty;
 	}
 
-	private BigDecimal getTotalToBeChargedAmountIfNotSubsTerminated(Subscription subscription, Date terminationDate) {
+
+	
+//	private List<WalletOperation> getToBeChargedWallets(Subscription subscription) throws BusinessException{
+//		List<WalletOperation> walletOperations = new ArrayList<WalletOperation>();
+//		for (ServiceInstance serviceInstance : subscription.getServiceInstances()){
+//			for (RecurringChargeInstance recChargeIns : serviceInstance.getRecurringChargeInstances()){
+//	            if ( recChargeIns.getNextChargeDate()!= null && recChargeIns.getChargeDate() != null && subscription.getEndAgreementDate() != null
+//	            		&& !recChargeIns.getStatus().equals(InstanceStatusEnum.CLOSED)
+//	            		&& recChargeIns.getChargeDate().getTime() <= subscription.getEndAgreementDate().getTime()) {
+//	            	
+//	            	Date maxDate = recChargeIns.getRecurringChargeTemplate().getCalendar().nextCalendarDate(subscription.getEndAgreementDate()); 
+//	            	
+//	            	List<WalletOperation> wos = recurringChargeInstanceService.applyVirtualRecurringCharge(recChargeIns.getId(), maxDate, false, WalletOperationStatusEnum.PENALTY
+//	            			, recChargeIns.getChargeDate(), recChargeIns.getNextChargeDate(), subscription.getEndAgreementDate());
+//	            	walletOperations.addAll(wos);
+//	            }
+//	           
+//			}
+//		}
+//		
+//		return walletOperations;
+//	}
+	
+
+	private List<WalletOperation> getToBeChargedWallets(Subscription subscription, Date terminationDate) throws BusinessException{
+		List<WalletOperation> walletOperations = new ArrayList<WalletOperation>();
+		for (ServiceInstance serviceInstance : subscription.getServiceInstances()){
+			for (RecurringChargeInstance recChargeIns : serviceInstance.getRecurringChargeInstances()){
+	            if ( recChargeIns.getChargeDate() != null && subscription.getEndAgreementDate() != null
+	            		&& !recChargeIns.getStatus().equals(InstanceStatusEnum.CLOSED)
+	            		&& recChargeIns.getChargeDate().getTime() <= subscription.getEndAgreementDate().getTime()) {
+	            	
+	            	Date chargeDate = recChargeIns.getChargeDate();
+	            	if (chargeDate.before(terminationDate)){
+	            		chargeDate = terminationDate;
+	            	}
+	                Date nextChargeDate = recChargeIns.getNextChargeDate();
+	                
+	                if (chargeDate != null && nextChargeDate == null && recChargeIns.getStatus().equals(InstanceStatusEnum.TERMINATED)){
+	                	nextChargeDate = recChargeIns.getRecurringChargeTemplate().getCalendar().nextCalendarDate(chargeDate);
+	                }
+	                
+	                if (chargeDate.after(nextChargeDate)){
+	                	continue;
+	                }
+	                
+	                while (chargeDate!= null && nextChargeDate != null && chargeDate.before(subscription.getEndAgreementDate())) {
+	                    
+	                    List<WalletOperation> wos = new ArrayList<WalletOperation>();
+	                    VirtualRecurringCharge virtualRecurringCharge = new VirtualRecurringCharge();
+	                    if (!recChargeIns.getRecurringChargeTemplate().getApplyInAdvance()) {
+	                    	virtualRecurringCharge = walletOperationService.applyVirtualNotAppliedinAdvanceReccuringCharge(recChargeIns, false, recChargeIns.getRecurringChargeTemplate(), subscription.getEndAgreementDate(), WalletOperationStatusEnum.PENALTY, chargeDate, nextChargeDate);
+	                    	walletOperations.addAll(virtualRecurringCharge.getWalletOperations());
+		                    chargeDate = virtualRecurringCharge.getChargeDate();
+		                    nextChargeDate = virtualRecurringCharge.getNextChargeDate();
+	                    } else {
+	                    	wos = walletOperationService.applyReccuringCharge(recChargeIns, false, recChargeIns.getRecurringChargeTemplate(), false, WalletOperationStatusEnum.PENALTY);
+	                    	walletOperations.addAll(wos);
+	                    	//TODO: chargeDate nextChargeDate i advance olanlar icin de handle et
+	                    }
+	                }
+	            }
+	           
+			}
+		}
 		
-		return new BigDecimal(100000);
+		return walletOperations;
+	}	
+	
+	
+	private Penalty getTotalToBeChargedAndRemainingInstallmentAmount(Subscription subscription, Date terminationDate, Penalty penalty) throws BusinessException {
+		
+		List<WalletOperation> wos = getToBeChargedWallets(subscription, terminationDate);
+        BigDecimal totalToBeChargedAmountWithTax = new BigDecimal(0);
+        BigDecimal totalInstallmentAmountWithTax = new BigDecimal(0);
+        for (WalletOperation wo : wos){
+        	if (wo.getStatus().equals(WalletOperationStatusEnum.PENALTY)){
+				if (wo.getChargeInstance().getChargeTemplate().getChargeSubType().equals(ChargeSubTypeEnum.CHARGE)
+						|| wo.getChargeInstance().getChargeTemplate().getChargeSubType().equals(ChargeSubTypeEnum.DISCOUNT))
+				{
+					totalToBeChargedAmountWithTax = totalToBeChargedAmountWithTax.add(wo.getAmountWithTax());
+					PenaltyWalletOperation penaltyWalletOperation = new PenaltyWalletOperation();
+					penaltyWalletOperation.setCode("PWO");
+					penaltyWalletOperation.setPenalty(penalty);
+					penaltyWalletOperation.setType(WalletOperationStatusEnum.TOBE_CHARGED);
+					penaltyWalletOperation.setWalletOperation(wo);
+					penalty.addPenaltyWalletOperation(penaltyWalletOperation);
+				}
+				else if (wo.getChargeInstance().getChargeTemplate().getChargeSubType().equals(ChargeSubTypeEnum.INSTALLMENT))
+				{
+					totalInstallmentAmountWithTax = totalInstallmentAmountWithTax.add(wo.getAmountWithTax());
+					PenaltyWalletOperation penaltyWalletOperation = new PenaltyWalletOperation();
+					penaltyWalletOperation.setCode("PWO");
+					penaltyWalletOperation.setPenalty(penalty);
+					penaltyWalletOperation.setType(WalletOperationStatusEnum.REMAIN_INSTALLMENT);
+					penaltyWalletOperation.setWalletOperation(wo);
+					penalty.addPenaltyWalletOperation(penaltyWalletOperation);
+				}
+        	}
+		}
+		
+        penalty.setTotalToBeChargedAmountWithTax(totalToBeChargedAmountWithTax);
+        penalty.setTotalInstallmentAmountWithTax(totalInstallmentAmountWithTax);
+        
+        return penalty;
 	}
 	
-	private BigDecimal getTotalRemainingInstallmentAmount(Subscription subscription, Date terminationDate) {
-		// TODO Auto-generated method stub
-		return new BigDecimal(10);
+	private BigDecimal getTotalToBeChargedAmountIfNotSubsTerminated(Subscription subscription, Date terminationDate, Penalty penalty) throws BusinessException {
+		
+		List<WalletOperation> wos = getToBeChargedWallets(subscription, terminationDate);
+        BigDecimal totalToBeChargedAmountWithTax = new BigDecimal(0);
+        for (WalletOperation wo : wos){
+			if (wo.getStatus().equals(WalletOperationStatusEnum.TOBE_CHARGED))
+			{
+				totalToBeChargedAmountWithTax = totalToBeChargedAmountWithTax.add(wo.getAmountWithTax());
+				PenaltyWalletOperation penaltyWalletOperation = new PenaltyWalletOperation();
+				penaltyWalletOperation.setCode("PWO");
+				penaltyWalletOperation.setPenalty(penalty);
+				penaltyWalletOperation.setType(WalletOperationStatusEnum.TOBE_CHARGED);
+				penaltyWalletOperation.setWalletOperation(wo);
+				penalty.addPenaltyWalletOperation(penaltyWalletOperation);
+			}
+		}
+		
+        penalty.setTotalToBeChargedAmountWithTax(totalToBeChargedAmountWithTax);
+        
+		return totalToBeChargedAmountWithTax;
+	}
+	
+	private BigDecimal getTotalRemainingInstallmentAmount(Subscription subscription, Date terminationDate, Penalty penalty) throws BusinessException {
+
+		List<WalletOperation> wos = getToBeChargedWallets(subscription, terminationDate);
+        BigDecimal totalInstallmentAmountWithTax = new BigDecimal(0);
+        for (WalletOperation wo : wos){
+			if (wo.getStatus().equals(WalletOperationStatusEnum.REMAIN_INSTALLMENT))
+			{
+				totalInstallmentAmountWithTax = totalInstallmentAmountWithTax.add(wo.getAmountWithTax());
+				PenaltyWalletOperation penaltyWalletOperation = new PenaltyWalletOperation();
+				penaltyWalletOperation.setCode("PWO");
+				penaltyWalletOperation.setPenalty(penalty);
+				penaltyWalletOperation.setType(WalletOperationStatusEnum.REMAIN_INSTALLMENT);
+				penaltyWalletOperation.setWalletOperation(wo);
+				penalty.addPenaltyWalletOperation(penaltyWalletOperation);
+			}
+			
+		}
+		
+        penalty.setTotalInstallmentAmountWithTax(totalInstallmentAmountWithTax);
+        
+		return totalInstallmentAmountWithTax;
+		
 	}
 
 	
