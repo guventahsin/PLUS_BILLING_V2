@@ -334,54 +334,6 @@ public class RecurringChargeInstanceService extends BusinessService<RecurringCha
         return nbRating;
     }
     
-    public List<WalletOperation> applyVirtualRecurringCharge(Long chargeInstanceId, Date maxDate, boolean isStrictlyBeforeMaxDate, WalletOperationStatusEnum walletOperationStatus
-    		, Date extChargeDate, Date extNextChargeDate, Date aggreementEndDate) throws BusinessException {
-        long startDate = System.currentTimeMillis();
-        List<WalletOperation> walletOperations = new ArrayList<WalletOperation>();
-        try {
-            RecurringChargeInstance activeRecurringChargeInstance = findById(chargeInstanceId);
-
-            if (!walletOperationService.isChargeMatch(activeRecurringChargeInstance, activeRecurringChargeInstance.getRecurringChargeTemplate().getFilterExpression())) {
-                log.debug("not rating chargeInstance with code={}, filter expression not evaluated to true", activeRecurringChargeInstance.getCode());
-                return walletOperations;
-            }
-
-            RecurringChargeTemplate recurringChargeTemplate = (RecurringChargeTemplate) activeRecurringChargeInstance.getRecurringChargeTemplate();
-            if (recurringChargeTemplate.getCalendar() == null) {
-                // FIXME : should not stop the method execution
-                rejectededChargeProducer.fire(recurringChargeTemplate);
-                log.error("Recurring charge template has no calendar: code=" + recurringChargeTemplate.getCode());
-                throw new BusinessException("Recurring charge template has no calendar: code=" + recurringChargeTemplate.getCode());
-            }
-
-            Date nextChargeDate = extNextChargeDate;
-            Date chargeDate = extChargeDate;
-
-            
-            while (nextChargeDate != null && ((nextChargeDate.getTime() <= maxDate.getTime() && !isStrictlyBeforeMaxDate)
-                    || (chargeDate.getTime() < maxDate.getTime() && isStrictlyBeforeMaxDate))) {
-                
-                List<WalletOperation> wos = new ArrayList<WalletOperation>();
-                VirtualRecurringCharge virtualRecurringCharge = new VirtualRecurringCharge();
-                if (!recurringChargeTemplate.getApplyInAdvance()) {
-                	virtualRecurringCharge = walletOperationService.applyVirtualNotAppliedinAdvanceReccuringCharge(activeRecurringChargeInstance, false, recurringChargeTemplate, aggreementEndDate, walletOperationStatus, chargeDate, nextChargeDate);
-                } else {
-                	wos = walletOperationService.applyReccuringCharge(activeRecurringChargeInstance, false, recurringChargeTemplate, false, walletOperationStatus);
-                }
-
-                walletOperations.addAll(virtualRecurringCharge.getWalletOperations());
-                
-                chargeDate = virtualRecurringCharge.getChargeDate();
-                nextChargeDate = virtualRecurringCharge.getNextChargeDate();
-                
-            }
-
-        } catch (Exception e) {
-            rejectededChargeProducer.fire("RecurringCharge " + chargeInstanceId);
-            throw new BusinessException(e);
-        }
-        return walletOperations;
-    }
 
     public int applyRecurringCharge(Long chargeInstanceId, Date maxDate) throws BusinessException {
         return applyRecurringCharge(chargeInstanceId, maxDate, false);
