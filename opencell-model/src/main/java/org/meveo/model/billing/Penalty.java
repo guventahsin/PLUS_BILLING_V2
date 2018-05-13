@@ -20,7 +20,6 @@ import javax.persistence.TemporalType;
 
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
-import org.meveo.model.Auditable;
 import org.meveo.model.BusinessEntity;
 
 @Entity

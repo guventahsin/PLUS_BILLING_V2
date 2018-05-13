@@ -20,37 +20,16 @@ package org.meveo.service.billing.impl;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import javax.ejb.Stateless;
 import javax.inject.Inject;
-import javax.persistence.Column;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.NoResultException;
-import javax.persistence.OneToOne;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
 
-import org.hibernate.type.descriptor.java.BigDecimalTypeDescriptor;
 import org.meveo.admin.exception.BusinessException;
-import org.meveo.admin.exception.IncorrectServiceInstanceException;
-import org.meveo.admin.exception.IncorrectSusbcriptionException;
-import org.meveo.commons.utils.ParamBean;
-import org.meveo.commons.utils.QueryBuilder;
-import org.meveo.commons.utils.StringUtils;
 import org.meveo.model.Auditable;
-import org.meveo.model.billing.ApplicationTypeEnum;
-import org.meveo.model.billing.ChargeApplicationModeEnum;
-import org.meveo.model.billing.ChargeInstance;
 import org.meveo.model.billing.InstanceStatusEnum;
-import org.meveo.model.billing.OneShotChargeInstance;
 import org.meveo.model.billing.Penalty;
 import org.meveo.model.billing.PenaltyCalculationTypeEnum;
 import org.meveo.model.billing.PenaltyWalletOperation;
@@ -58,27 +37,11 @@ import org.meveo.model.billing.RatedTransaction;
 import org.meveo.model.billing.RecurringChargeInstance;
 import org.meveo.model.billing.ServiceInstance;
 import org.meveo.model.billing.Subscription;
-import org.meveo.model.billing.SubscriptionStatusEnum;
-import org.meveo.model.billing.SubscriptionTerminationReason;
-import org.meveo.model.billing.UsageChargeInstance;
 import org.meveo.model.billing.VirtualRecurringCharge;
 import org.meveo.model.billing.WalletOperation;
 import org.meveo.model.billing.WalletOperationStatusEnum;
-import org.meveo.model.catalog.CalendarJoin;
 import org.meveo.model.catalog.ChargeSubTypeEnum;
-import org.meveo.model.catalog.OfferTemplate;
-import org.meveo.model.catalog.OneShotChargeTemplate;
-import org.meveo.model.catalog.RecurringChargeTemplate;
-import org.meveo.model.catalog.ServiceChargeTemplate;
-import org.meveo.model.catalog.ServiceChargeTemplateUsage;
-import org.meveo.model.catalog.ServiceTemplate;
-import org.meveo.model.catalog.CalendarJoin.CalendarJoinTypeEnum;
-import org.meveo.model.shared.DateUtils;
 import org.meveo.service.base.BusinessService;
-import org.meveo.service.catalog.impl.ServiceTemplateService;
-import org.meveo.service.script.service.ServiceModelScriptService;
-
-import jxl.write.DateTime;
 
 @Stateless
 public class PenaltyService  extends BusinessService<Penalty> {
