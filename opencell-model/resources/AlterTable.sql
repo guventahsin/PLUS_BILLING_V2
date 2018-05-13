@@ -10,7 +10,15 @@ alter table billing_subscription add agreement_extension_days int;
 
 alter table cat_charge_template add charge_sub_type varchar(20);
 
+drop SEQUENCE billing_penalty_wo_seq;
+
+CREATE SEQUENCE billing_penalty_wo_seq;
+
+drop sequence billing_penalty_seq;
+
 CREATE SEQUENCE billing_penalty_seq;
+
+drop table billing_penalty_wallet_operation
 
 drop table billing_penalty
 
@@ -25,7 +33,9 @@ CREATE TABLE billing_penalty
 	to_be_charged_amount_with_tax numeric (23,12),
 	applied_discount_amount_with_tax numeric (23,12),
 	installment_amount_with_tax numeric (23,12),
+	applied_wallet_op_type varchar(20),
 	subscription_id bigint not null,
+	info_penalty_id bigint,
 	description varchar(255),
 	version INT, 
 	disabled INT DEFAULT 0 NOT NULL, 
@@ -40,9 +50,8 @@ CREATE TABLE billing_penalty
 
 ALTER TABLE billing_penalty ADD CONSTRAINT fk_billing_penalty_subscription FOREIGN KEY (subscription_id) REFERENCES billing_subscription (id) ON UPDATE NO ACTION ON DELETE NO ACTION;
 
-CREATE SEQUENCE billing_penalty_wo_seq;
+ALTER TABLE billing_penalty ADD CONSTRAINT fk_billing_penalty_info_penalty FOREIGN KEY (info_penalty_id) REFERENCES billing_penalty (id) ON UPDATE NO ACTION ON DELETE NO ACTION;
 
-drop table billing_penalty_wallet_operation
 
 create table billing_penalty_wallet_operation
 (
@@ -64,4 +73,7 @@ create table billing_penalty_wallet_operation
 ALTER TABLE billing_penalty_wallet_operation ADD CONSTRAINT fk_billing_penalty_wo_penalty FOREIGN KEY (penalty_id) REFERENCES billing_penalty (id) ON UPDATE NO ACTION ON DELETE NO ACTION;
 
 ALTER TABLE billing_penalty_wallet_operation ADD CONSTRAINT fk_billing_penalty_wo_wallet FOREIGN KEY (wallet_operation_id) REFERENCES billing_wallet_operation (id) ON UPDATE NO ACTION ON DELETE NO ACTION;
+
+
+
 

@@ -63,6 +63,14 @@ public class Penalty extends BusinessEntity {
     @Column(name = "installment_amount_with_tax", precision = NB_PRECISION, scale = NB_DECIMALS)
     private BigDecimal totalInstallmentAmountWithTax;	
     
+    @Enumerated(EnumType.STRING)
+    @Column(name = "applied_wallet_op_type")
+    private WalletOperationStatusEnum appliedWalletOpType;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "info_penalty_id")
+    private Penalty InfoPenalty;
+    
     @OneToMany(mappedBy = "penalty", fetch = FetchType.LAZY, cascade = {CascadeType.ALL})
     private List<PenaltyWalletOperation> penaltyWalletOperations = new ArrayList<>();
 
@@ -155,6 +163,22 @@ public class Penalty extends BusinessEntity {
 
 	public void setPenaltyWalletOperations(List<PenaltyWalletOperation> penaltyWalletOperations) {
 		this.penaltyWalletOperations = penaltyWalletOperations;
+	}
+
+	public WalletOperationStatusEnum getAppliedWalletOpType() {
+		return appliedWalletOpType;
+	}
+
+	public void setAppliedWalletOpType(WalletOperationStatusEnum appliedWalletOpType) {
+		this.appliedWalletOpType = appliedWalletOpType;
+	}
+
+	public Penalty getInfoPenalty() {
+		return InfoPenalty;
+	}
+
+	public void setInfoPenalty(Penalty infoPenalty) {
+		InfoPenalty = infoPenalty;
 	}
     
 }

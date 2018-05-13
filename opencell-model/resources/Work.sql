@@ -8,40 +8,55 @@ select a.code, a.charge_date, b.next_charge_date, status from billing_charge_ins
 and user_account_id = 8
 
 select a.created, a.code, a.input_quantity, a.amount_without_tax, a.amount_tax, a.amount_with_tax, a.start_date, a.end_date, a.charge_instance_id  from billing_wallet_operation a
-, billing_charge_instance b
+, billing_charge_instance b 
 where a.status = 'OPEN' 
 and a.charge_instance_id = b.id
 and b.user_account_id = 8
 order by created desc
 
 
+select a.created, a.code, a.input_quantity, a.amount_without_tax, a.amount_tax, a.amount_with_tax, a.start_date, a.end_date, a.charge_instance_id  from billing_wallet_operation a
+, billing_charge_instance b
+where a.status = 'PENALTY' 
+and a.charge_instance_id = b.id
+and b.user_account_id = 8
+order by created desc
 
-select d.* from billing_subscription a, billing_service_instance b, billing_recurring_charge_inst c, billing_wallet_operation d, billing_charge_instance e,
+
+select d.*, e.charge_date, c.next_charge_date from billing_subscription a, billing_service_instance b, billing_recurring_charge_inst c, billing_wallet_operation d, billing_charge_instance e,
 cat_charge_template f
 where a.Id = b.subscription_id and b.Id = c.service_instance_id and c.Id = d.charge_instance_id 
 and c.Id = e.Id
 and e.charge_template_id = f.Id
-and a.Id = 7
+and a.Id = 20
 
-select e.* from billing_subscription a, billing_service_instance b, billing_recurring_charge_inst c, billing_wallet_operation d, billing_rated_transaction e
+
+select e.*, d.* from billing_subscription a, billing_service_instance b, billing_recurring_charge_inst c, billing_wallet_operation d, billing_rated_transaction e
 where a.Id = b.subscription_id and b.Id = c.service_instance_id and c.Id = d.charge_instance_id 
 and d.Id = e.wallet_operation_id
-and a.Id = 7
+and a.Id = 15
 
-update billing_rated_transaction set status = 'BILLED' where id in (80,81)
+update billing_rated_transaction set status = 'BILLED' where id in (102,103)
 
 select * from billing_subscription
 
 select * from billing_penalty
 
-select * from billing_penalty_wallet_operation
+select * from billing_penalty_wallet_operation where penalty_id = 4
+
+select 
+--b.code, b.amount_with_tax, b.start_date, b.end_date, b.quantity, b.status, a.type 
+b.* from billing_penalty_wallet_operation a, billing_wallet_operation b  where 
+b.Id = a.wallet_operation_id
+and a.penalty_id = 3
+order by code, start_date
 
 select * from billing_rated_transaction where wallet_operation_id in (526,527, 528)
 
 select * from billing_billing_account
 
 
-select * from billing_wallet_operation where charge_instance_id in (334,335)
+select * from billing_wallet_operation --where charge_instance_id in (334,335)
 
 select * from billing_rated_transaction where wallet_operation_id in (509, 510)
 

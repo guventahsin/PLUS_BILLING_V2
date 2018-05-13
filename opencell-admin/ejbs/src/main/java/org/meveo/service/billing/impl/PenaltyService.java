@@ -45,6 +45,9 @@ import org.meveo.admin.exception.IncorrectSusbcriptionException;
 import org.meveo.commons.utils.ParamBean;
 import org.meveo.commons.utils.QueryBuilder;
 import org.meveo.commons.utils.StringUtils;
+import org.meveo.model.Auditable;
+import org.meveo.model.billing.ApplicationTypeEnum;
+import org.meveo.model.billing.ChargeApplicationModeEnum;
 import org.meveo.model.billing.ChargeInstance;
 import org.meveo.model.billing.InstanceStatusEnum;
 import org.meveo.model.billing.OneShotChargeInstance;
@@ -89,13 +92,14 @@ public class PenaltyService  extends BusinessService<Penalty> {
     @Inject
     private RecurringChargeInstanceService recurringChargeInstanceService;
     
-    public BigDecimal calculatePenalty(Subscription subscription, Date terminationDate) throws BusinessException
+    public Penalty calculatePenalty(Subscription subscription, Date terminationDate) throws BusinessException
     {
-    	BigDecimal penaltyAmountWithTax = null;
+    	
+    	Penalty returnedPenalty = null;
     	if (subscription != null && subscription.getEndAgreementDate() != null)
     	{
 	    	Penalty penalty  = new Penalty();
-	    	penalty.setCode("CODE");
+	    	penalty.setCode("INFO_CODE");
 	    	penalty.setSubscription(subscription);
 	    	penalty.setCalculation_date(new Date());
 	    	penalty.setCalculation_type(PenaltyCalculationTypeEnum.INFO);
@@ -104,7 +108,7 @@ public class PenaltyService  extends BusinessService<Penalty> {
 			
 			Penalty attachedPenalty = update(penalty);
 			
-			Penalty returnedPenalty = null;
+			BigDecimal penaltyAmountWithTax = null;
     		if (subscription.getEndAgreementDate().after(terminationDate)){
     			    	    	
     			returnedPenalty = getAppliedTotalDiscountAmount(subscription, terminationDate, attachedPenalty);
@@ -112,9 +116,11 @@ public class PenaltyService  extends BusinessService<Penalty> {
 
     			if (returnedPenalty.getTotalAppliedDiscountAmountWithTax().compareTo(returnedPenalty.getTotalToBeChargedAmountWithTax()) <= 0 ){
     				penaltyAmountWithTax = returnedPenalty.getTotalAppliedDiscountAmountWithTax().add(returnedPenalty.getTotalInstallmentAmountWithTax());
+    				returnedPenalty.setAppliedWalletOpType(WalletOperationStatusEnum.APPLIED_DISCOUNT);
     			}
     			else{
     				penaltyAmountWithTax = returnedPenalty.getTotalToBeChargedAmountWithTax().add(returnedPenalty.getTotalInstallmentAmountWithTax());
+    				returnedPenalty.setAppliedWalletOpType(WalletOperationStatusEnum.TOBE_CHARGED);
     			}
     		}
     		else{
@@ -125,7 +131,7 @@ public class PenaltyService  extends BusinessService<Penalty> {
     		update(returnedPenalty);
     	}
     	    	
-    	return penaltyAmountWithTax;
+    	return returnedPenalty;
     }
 
     private List<WalletOperation> chargeUpToTermination(Subscription subscription, Date terminationDate) throws BusinessException
@@ -369,13 +375,90 @@ public class PenaltyService  extends BusinessService<Penalty> {
 		return totalInstallmentAmountWithTax;
 		
 	}
-
 	
-	public boolean applyPenalty(Long penaltyId) throws BusinessException
+	private WalletOperation getNewWalletOperation(WalletOperation wo, WalletOperationStatusEnum status, Date terminationDate)
+	{
+		WalletOperation newWo = new WalletOperation();
+		newWo.setVersion(wo.getVersion());
+		newWo.setDisabled(false);
+		newWo.setAuditable(new Auditable(this.currentUser));
+		newWo.setCode(wo.getCode());
+		newWo.setDescription("Taahhüt İptal Bedeli");
+		newWo.setAmountTax(wo.getAmountTax().compareTo(BigDecimal.ZERO) < 0 ? wo.getAmountTax().negate() : wo.getAmountTax());
+		newWo.setAmountWithTax(wo.getAmountWithTax().compareTo(BigDecimal.ZERO) < 0 ? wo.getAmountWithTax().negate() : wo.getAmountWithTax());
+		newWo.setAmountWithoutTax(wo.getAmountWithoutTax().compareTo(BigDecimal.ZERO) < 0 ? wo.getAmountWithoutTax().negate() : wo.getAmountWithoutTax());
+		newWo.setEndDate(terminationDate);
+		newWo.setOfferCode(wo.getOfferCode());
+		newWo.setOperationDate(wo.getOperationDate());
+		newWo.setQuantity(wo.getQuantity());
+		newWo.setStartDate(wo.getSubscriptionDate());
+		newWo.setStatus(status);
+		newWo.setSubscriptionDate(wo.getSubscriptionDate());
+		newWo.setTaxPercent(wo.getTaxPercent());
+		newWo.setUnitAmountTax(wo.getUnitAmountTax());
+		newWo.setUnitAmountWithTax(wo.getUnitAmountWithTax());
+		newWo.setUnitAmountWithoutTax(wo.getUnitAmountWithoutTax());
+		newWo.setChargeInstance(wo.getChargeInstance());
+		newWo.setCurrency(wo.getCurrency());
+		newWo.setPriceplan(wo.getPriceplan());
+		newWo.setSeller(wo.getSeller());
+		newWo.setWallet(wo.getWallet());
+		newWo.setInputQuantity(wo.getInputQuantity());
+		return newWo;
+	}
+	
+	public Penalty applyPenalty(Long penaltyId) throws BusinessException
     {
-		Penalty calculatedPenalty = findById(penaltyId);
-		calculatedPenalty.setCalculation_type(PenaltyCalculationTypeEnum.EXECUTE);	
-		return true;
+		Penalty infoPenalty = findById(penaltyId);
+		if (infoPenalty == null){
+			return null;
+		}
+		
+    	Penalty penalty  = new Penalty();
+    	penalty.setCode("EXECUTE_CODE");
+    	penalty.setSubscription(infoPenalty.getSubscription());
+    	penalty.setCalculation_date(new Date());
+    	penalty.setCalculation_type(PenaltyCalculationTypeEnum.EXECUTE);
+    	penalty.setTerminationDate(infoPenalty.getTerminationDate());
+		penalty.setSubscriptionTerminationReason(infoPenalty.getSubscriptionTerminationReason());
+		penalty.setAppliedWalletOpType(infoPenalty.getAppliedWalletOpType());
+		penalty.setPenaltyAmountWitTax(infoPenalty.getPenaltyAmountWitTax());
+		penalty.setTotalAppliedDiscountAmountWithTax(infoPenalty.getTotalAppliedDiscountAmountWithTax());
+		penalty.setTotalInstallmentAmountWithTax(infoPenalty.getTotalInstallmentAmountWithTax());
+		penalty.setTotalToBeChargedAmountWithTax(infoPenalty.getTotalToBeChargedAmountWithTax());
+		penalty.setInfoPenalty(infoPenalty);
+		
+		Penalty attachedPenalty = update(penalty);
+		
+		for (PenaltyWalletOperation penaltyWalletOperation : infoPenalty.getPenaltyWalletOperations()
+				.stream().filter(p-> p.getType().equals(infoPenalty.getAppliedWalletOpType())).collect(Collectors.toList())){
+			
+			WalletOperation wo = getNewWalletOperation(penaltyWalletOperation.getWalletOperation(), WalletOperationStatusEnum.OPEN, infoPenalty.getTerminationDate());
+			WalletOperation attachedWalletOperation = walletOperationService.update(wo);
+			PenaltyWalletOperation penaltyWo = new PenaltyWalletOperation();
+			penaltyWo.setCode("PWO");
+			penaltyWo.setPenalty(attachedPenalty);
+			penaltyWo.setType(infoPenalty.getAppliedWalletOpType());
+			penaltyWo.setWalletOperation(attachedWalletOperation);
+			attachedPenalty.addPenaltyWalletOperation(penaltyWo);
+		}
+		
+		for (PenaltyWalletOperation penaltyWalletOperation : infoPenalty.getPenaltyWalletOperations()
+				.stream().filter(p-> p.getType().equals(WalletOperationStatusEnum.REMAIN_INSTALLMENT)).collect(Collectors.toList())){
+			
+			WalletOperation wo = getNewWalletOperation(penaltyWalletOperation.getWalletOperation(), WalletOperationStatusEnum.OPEN, infoPenalty.getTerminationDate());
+			WalletOperation attachedWalletOperation = walletOperationService.update(wo);
+			PenaltyWalletOperation penaltyWo = new PenaltyWalletOperation();
+			penaltyWo.setCode("PWO");
+			penaltyWo.setPenalty(attachedPenalty);
+			penaltyWo.setType(WalletOperationStatusEnum.REMAIN_INSTALLMENT);
+			penaltyWo.setWalletOperation(attachedWalletOperation);
+			attachedPenalty.addPenaltyWalletOperation(penaltyWo);
+		}
+		
+		Penalty returnedPenalty = update(attachedPenalty);
+		
+		return returnedPenalty;
    }
    
 }

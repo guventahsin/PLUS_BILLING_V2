@@ -35,6 +35,7 @@ import org.meveo.admin.exception.IncorrectSusbcriptionException;
 import org.meveo.audit.logging.annotations.MeveoAudit;
 import org.meveo.commons.utils.QueryBuilder;
 import org.meveo.model.billing.InstanceStatusEnum;
+import org.meveo.model.billing.Penalty;
 import org.meveo.model.billing.ServiceInstance;
 import org.meveo.model.billing.Subscription;
 import org.meveo.model.billing.SubscriptionStatusEnum;
@@ -229,8 +230,8 @@ public class SubscriptionService extends BusinessService<Subscription> {
         }
 
         if (terminationReason != null && terminationReason.isApplyAgreement()){
-        	BigDecimal terminationCharge = penaltyService.calculatePenalty(subscription, terminationDate);
-        	
+        	Penalty penalty = penaltyService.calculatePenalty(subscription, terminationDate);
+        	penaltyService.applyPenalty(penalty.getId());
         }
         
         return subscription;
