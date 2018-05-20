@@ -167,6 +167,9 @@ public class InvoiceService extends PersistenceService<Invoice> {
 
     @Inject
     private ServiceSingleton serviceSingleton;
+    
+    @Inject
+    private StampTaxService stampTaxService;
 
     /** folder for pdf . */
     private String PDF_DIR_NAME = "pdf";
@@ -959,6 +962,10 @@ public class InvoiceService extends PersistenceService<Invoice> {
                 invoice.addAmountTax(taxInvoiceAgregate.getAmountTax().setScale(rounding, RoundingMode.HALF_UP));
             }
         }
+        
+        BigDecimal stampTax = stampTaxService.getTotalStampTaxOfBillingAccount(billingAccount);
+        invoice.addAmountTax(stampTax);
+        invoice.setStampTax(stampTax);
 
         if (invoice.getAmountWithoutTax() != null) {
             invoice.setAmountWithTax(invoice.getAmountWithoutTax().add(invoice.getAmountTax() == null ? BigDecimal.ZERO : invoice.getAmountTax()));

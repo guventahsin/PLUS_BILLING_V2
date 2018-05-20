@@ -124,9 +124,13 @@ public class Invoice extends EnableEntity implements ICustomFieldEntity {
 
     @Column(name = "amount_with_tax", precision = NB_PRECISION, scale = NB_DECIMALS)
     private BigDecimal amountWithTax;
-
+    
     @Column(name = "net_to_pay", precision = NB_PRECISION, scale = NB_DECIMALS)
     private BigDecimal netToPay;
+    
+    @Column(name = "stamp_tax", precision = NB_PRECISION, scale = NB_DECIMALS)
+    private BigDecimal stampTax;
+
 
     @Column(name = "payment_method")
     @Enumerated(EnumType.STRING)
@@ -664,4 +668,12 @@ public class Invoice extends EnableEntity implements ICustomFieldEntity {
         }
         return xmlFilename;
     }
+
+	public BigDecimal getStampTax() {
+		return stampTax;
+	}
+
+	public void setStampTax(BigDecimal stampTax) {
+		this.stampTax = stampTax;
+	}
 }

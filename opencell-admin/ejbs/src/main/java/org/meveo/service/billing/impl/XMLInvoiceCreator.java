@@ -75,6 +75,7 @@ import org.meveo.model.billing.OneShotChargeInstance;
 import org.meveo.model.billing.RatedTransaction;
 import org.meveo.model.billing.RecurringChargeInstance;
 import org.meveo.model.billing.ServiceInstance;
+import org.meveo.model.billing.StampTax;
 import org.meveo.model.billing.SubCategoryInvoiceAgregate;
 import org.meveo.model.billing.Subscription;
 import org.meveo.model.billing.Tax;
@@ -572,7 +573,7 @@ public class XMLInvoiceCreator extends PersistenceService<Invoice> {
         amount.appendChild(netToPayElement);
 
         addTaxes(billingAccount, invoice.getAmountTax(), invoiceAgregates, doc, amount, hasInvoiceAgregates);
-
+        addStampTax(billingAccount, invoice, doc);
         Element detail = null;
         boolean displayDetail = false;
         if (invoiceConfiguration != null && invoiceConfiguration.getDisplayDetail() != null && invoiceConfiguration.getDisplayDetail() && invoice.isDetailedInvoice()) {
@@ -1592,6 +1593,41 @@ public class XMLInvoiceCreator extends PersistenceService<Invoice> {
         }
     }
 
+
+    private void addStampTax(BillingAccount billingAccount, Invoice invoice, Document doc){
+    
+    	int rounding = appProvider.getRounding() == null ? 2 : appProvider.getRounding();
+    	
+    	Element taxes = (Element)doc.getElementsByTagName("taxes").item(0);
+    	
+	    //handle stamp tax
+	    Element tax = doc.createElement("tax");
+	    tax.setAttribute("id",  "3");
+	    tax.setAttribute("code", "TAX_STAMP");
+	
+	    Element taxName = doc.createElement("name");
+	    Text taxNameTxt = doc.createTextNode("Damga Vergisi");
+	    taxName.appendChild(taxNameTxt);
+	    tax.appendChild(taxName);
+	
+	    Element percent = doc.createElement("percent");
+	    Text percentTxt = doc.createTextNode(round(new BigDecimal(StampTax.stampTaxRate), rounding));
+	    percent.appendChild(percentTxt);
+	    tax.appendChild(percent);
+	
+	    Element taxAmount = doc.createElement("amount");
+	    Text amountTxt = doc.createTextNode(round(invoice.getStampTax(), rounding));
+	    taxAmount.appendChild(amountTxt);
+	    tax.appendChild(taxAmount);
+	
+	    Element amountHT = doc.createElement("amountHT");
+	    Text amountHTTxt = doc.createTextNode(round(invoice.getAmountWithoutTax(), rounding));
+	    amountHT.appendChild(amountHTTxt);
+	    tax.appendChild(amountHT);
+	
+	    taxes.appendChild(tax);
+    }
+    
     /**
      * @param invoiceAgregates list of invoice agregate
      * @param doc DOM document

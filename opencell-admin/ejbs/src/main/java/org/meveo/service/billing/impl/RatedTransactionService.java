@@ -56,6 +56,7 @@ import org.meveo.model.billing.InvoiceSubCategory;
 import org.meveo.model.billing.InvoiceSubcategoryCountry;
 import org.meveo.model.billing.RatedTransaction;
 import org.meveo.model.billing.RatedTransactionStatusEnum;
+import org.meveo.model.billing.StampTax;
 import org.meveo.model.billing.SubCategoryInvoiceAgregate;
 import org.meveo.model.billing.Subscription;
 import org.meveo.model.billing.Tax;
@@ -103,6 +104,9 @@ public class RatedTransactionService extends PersistenceService<RatedTransaction
 
     @Inject
     private ResourceBundle resourceMessages;
+    
+    @Inject
+    private StampTaxService stampTaxService;
 
     /** constants.*/
     private final BigDecimal HUNDRED = new BigDecimal("100");
@@ -604,6 +608,11 @@ public class RatedTransactionService extends PersistenceService<RatedTransaction
                 TaxInvoiceAgregate taxInvoiceAgregate = tax.getValue();
                 invoice.addAmountTax(taxInvoiceAgregate.getAmountTax().setScale(rounding, RoundingMode.HALF_UP));
             }
+            
+            BigDecimal stampTax = stampTaxService.getTotalStampTaxOfBillingAccount(billingAccount);
+            invoice.addAmountTax(stampTax);
+            invoice.setStampTax(stampTax);
+            
             if (invoice.getAmountWithoutTax() != null) {
                 invoice.setAmountWithTax(invoice.getAmountWithoutTax().add(invoice.getAmountTax() == null ? BigDecimal.ZERO : invoice.getAmountTax()));
             }

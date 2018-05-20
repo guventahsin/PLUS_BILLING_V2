@@ -1,4 +1,5 @@
-select a.Id, a.code, a.charge_date, b.next_charge_date, status, status_date, created from billing_charge_instance a, billing_recurring_charge_inst b where a.Id = B.Id and a.status in( 'ACTIVE', 'CLOSED')
+select a.Id, a.code, a.charge_date, b.next_charge_date, status, status_date, created from billing_charge_instance a, 
+billing_recurring_charge_inst b where a.Id = B.Id and a.status in( 'ACTIVE', 'CLOSED')
 and user_account_id = 8
 
 select a.code, a.charge_date, b.next_charge_date, status from billing_charge_instance a, billing_recurring_charge_inst b where a.Id = B.Id and a.status = 'TERMINATED'  
@@ -14,6 +15,13 @@ and a.charge_instance_id = b.id
 and b.user_account_id = 8
 order by created desc
 
+
+select a.created, a.code, a.input_quantity, a.amount_without_tax, a.amount_tax, a.amount_with_tax, a.start_date, a.end_date, a.charge_instance_id  from billing_wallet_operation a
+, billing_charge_instance b
+where a.status = 'TREATED' 
+and a.charge_instance_id = b.id
+and b.user_account_id = 8
+order by created desc
 
 select a.created, a.code, a.input_quantity, a.amount_without_tax, a.amount_tax, a.amount_with_tax, a.start_date, a.end_date, a.charge_instance_id  from billing_wallet_operation a
 , billing_charge_instance b
@@ -69,9 +77,9 @@ select * from billing_tax
 
 select * from billing_invoice_agregate_taxes
 
-select * from billing_invoice_agregate
+select * from billing_invoice_agregate  order by id desc
 
-select * from billing_invoice
+select * from billing_invoice where invoice_number = '000000014'
 
 select * from billing_recurring_charge_inst order by id desc
 
@@ -158,3 +166,5 @@ select * from billing_inv_sub_cat_country where invoice_sub_category_id = -2 and
 select * from billing_invoice_sub_cat where id = -2
 
 select * from billing_tax
+
+select * from billing_invoice order by id desc

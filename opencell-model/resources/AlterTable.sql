@@ -74,6 +74,8 @@ ALTER TABLE billing_penalty_wallet_operation ADD CONSTRAINT fk_billing_penalty_w
 
 ALTER TABLE billing_penalty_wallet_operation ADD CONSTRAINT fk_billing_penalty_wo_wallet FOREIGN KEY (wallet_operation_id) REFERENCES billing_wallet_operation (id) ON UPDATE NO ACTION ON DELETE NO ACTION;
 
+create sequence billing_stamp_tax_seq;
+
 create table billing_stamp_tax
 (
 	id bigint not null,
@@ -93,6 +95,8 @@ create table billing_stamp_tax
 )
 
 ALTER TABLE billing_stamp_tax ADD CONSTRAINT fk_billing_stamp_wo_wallet FOREIGN KEY (wallet_operation_id) REFERENCES billing_wallet_operation (id) ON UPDATE NO ACTION ON DELETE NO ACTION;
+
+create sequence billing_stamptax_chargeins_seq;
 
 create table billing_stamp_tax_charge_ins
 (
@@ -114,4 +118,6 @@ create table billing_stamp_tax_charge_ins
 ALTER TABLE billing_stamp_tax_charge_ins ADD CONSTRAINT fk_billing_stamp_charge_ins_stamp FOREIGN KEY (stamp_tax_id) REFERENCES billing_stamp_tax (id) ON UPDATE NO ACTION ON DELETE NO ACTION;
 
 ALTER TABLE billing_stamp_tax_charge_ins ADD CONSTRAINT fk_billing_stamp_charge_ins FOREIGN KEY (charge_instance_id) REFERENCES billing_charge_instance (id) ON UPDATE NO ACTION ON DELETE NO ACTION;
+
+alter table billing_invoice add stamp_tax numeric(23,12);
 
