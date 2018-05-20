@@ -65,12 +65,19 @@ where id in (116,117)
 
 select agreement_extension_days from billing_subscription where id = 3
 
+select * from billing_tax
+
+select * from billing_invoice_agregate_taxes
+
+select * from billing_invoice_agregate
+
+select * from billing_invoice
 
 select * from billing_recurring_charge_inst order by id desc
 
 select * from billing_charge_instance order by id desc
 
-select * from billing_subscription
+select * from billing_subscription order by id desc 
 
 select * from billing_wallet_operation
 

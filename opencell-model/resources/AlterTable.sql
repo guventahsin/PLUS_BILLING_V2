@@ -74,6 +74,44 @@ ALTER TABLE billing_penalty_wallet_operation ADD CONSTRAINT fk_billing_penalty_w
 
 ALTER TABLE billing_penalty_wallet_operation ADD CONSTRAINT fk_billing_penalty_wo_wallet FOREIGN KEY (wallet_operation_id) REFERENCES billing_wallet_operation (id) ON UPDATE NO ACTION ON DELETE NO ACTION;
 
+create table billing_stamp_tax
+(
+	id bigint not null,
+	calculation_type varchar (20) not null,
+	calculation_date timestamp not null,
+	total_tax_amount numeric (23,12) not null,
+	wallet_operation_id bigint not null,
+	description varchar(255),
+	version INT, 
+	disabled INT DEFAULT 0 NOT NULL, 
+	created TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+	creator VARCHAR(100),
+	updated TIMESTAMP WITHOUT TIME ZONE,
+	updater varchar(100),
+	code VARCHAR(255) NOT null,
+	CONSTRAINT billing_stamp_tax_pkey PRIMARY KEY (id)
+)
 
+ALTER TABLE billing_stamp_tax ADD CONSTRAINT fk_billing_stamp_wo_wallet FOREIGN KEY (wallet_operation_id) REFERENCES billing_wallet_operation (id) ON UPDATE NO ACTION ON DELETE NO ACTION;
 
+create table billing_stamp_tax_charge_ins
+(
+	id bigint not null,
+	stamp_tax_id bigint not null,
+	charge_instance_id bigint not null,
+	stamp_tax_amount numeric(23,12) not null,
+	description varchar(255),
+	version INT, 
+	disabled INT DEFAULT 0 NOT NULL, 
+	created TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+	creator VARCHAR(100),
+	updated TIMESTAMP WITHOUT TIME ZONE,
+	updater varchar(100),
+	code VARCHAR(255) NOT null,
+	CONSTRAINT billing_stamp_tax_charge_ins_pkey PRIMARY KEY (id)
+)
+
+ALTER TABLE billing_stamp_tax_charge_ins ADD CONSTRAINT fk_billing_stamp_charge_ins_stamp FOREIGN KEY (stamp_tax_id) REFERENCES billing_stamp_tax (id) ON UPDATE NO ACTION ON DELETE NO ACTION;
+
+ALTER TABLE billing_stamp_tax_charge_ins ADD CONSTRAINT fk_billing_stamp_charge_ins FOREIGN KEY (charge_instance_id) REFERENCES billing_charge_instance (id) ON UPDATE NO ACTION ON DELETE NO ACTION;
 

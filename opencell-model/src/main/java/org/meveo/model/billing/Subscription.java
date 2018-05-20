@@ -389,6 +389,7 @@ public class Subscription extends BusinessCFEntity {
             calendar.setTime(getSubscriptionDate());
             calendar.add(getSubscriptionRenewal().getInitialyActiveForUnit().getCalendarField(), getSubscriptionRenewal().getInitialyActiveFor());
             setSubscribedTillDate(calendar.getTime());
+            setEndAgreementDate(calendar.getTime());
 
         } else {
             setSubscribedTillDate(null);
