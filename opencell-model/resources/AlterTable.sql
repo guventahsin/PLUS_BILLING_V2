@@ -74,7 +74,40 @@ ALTER TABLE billing_penalty_wallet_operation ADD CONSTRAINT fk_billing_penalty_w
 
 ALTER TABLE billing_penalty_wallet_operation ADD CONSTRAINT fk_billing_penalty_wo_wallet FOREIGN KEY (wallet_operation_id) REFERENCES billing_wallet_operation (id) ON UPDATE NO ACTION ON DELETE NO ACTION;
 
+
 create sequence billing_stamp_tax_seq;
+
+create sequence billing_account_stamp_tax_seq;
+
+create sequence billing_stamptax_chargeins_seq;
+
+
+
+drop table billing_stamp_tax_charge_ins;
+
+drop table billing_account_stamp_tax;
+
+drop table billing_stamp_tax;
+
+
+create table billing_account_stamp_tax
+(
+	id bigint not null,
+	billing_account_id bigint not null,
+	stamp_tax_amount numeric(23,12) not null,
+	description varchar(255),
+	version INT, 
+	disabled INT DEFAULT 0 NOT NULL, 
+	created TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+	creator VARCHAR(100),
+	updated TIMESTAMP WITHOUT TIME ZONE,
+	updater varchar(100),
+	code VARCHAR(255) NOT null,
+	CONSTRAINT billing_stamp_tax_billacc_pkey PRIMARY KEY (id)
+)
+
+ALTER TABLE billing_account_stamp_tax ADD CONSTRAINT fk_billing_billacc_stamp_bill_acc FOREIGN KEY (billing_account_id) REFERENCES billing_billing_account (id) ON UPDATE NO ACTION ON DELETE NO ACTION;
+
 
 create table billing_stamp_tax
 (
@@ -82,7 +115,8 @@ create table billing_stamp_tax
 	calculation_type varchar (20) not null,
 	calculation_date timestamp not null,
 	total_tax_amount numeric (23,12) not null,
-	wallet_operation_id bigint not null,
+	subscription_id bigint not null,
+	billing_account_stamp_tax_id bigint,
 	description varchar(255),
 	version INT, 
 	disabled INT DEFAULT 0 NOT NULL, 
@@ -94,9 +128,9 @@ create table billing_stamp_tax
 	CONSTRAINT billing_stamp_tax_pkey PRIMARY KEY (id)
 )
 
-ALTER TABLE billing_stamp_tax ADD CONSTRAINT fk_billing_stamp_wo_wallet FOREIGN KEY (wallet_operation_id) REFERENCES billing_wallet_operation (id) ON UPDATE NO ACTION ON DELETE NO ACTION;
+ALTER TABLE billing_stamp_tax ADD CONSTRAINT fk_billing_stamp_subs_id FOREIGN KEY (subscription_id) REFERENCES billing_subscription (id) ON UPDATE NO ACTION ON DELETE NO ACTION;
 
-create sequence billing_stamptax_chargeins_seq;
+ALTER TABLE billing_stamp_tax ADD CONSTRAINT fk_billing_stamp_billaccstamptax FOREIGN KEY (billing_account_stamp_tax_id) REFERENCES billing_account_stamp_tax (id) ON UPDATE NO ACTION ON DELETE NO ACTION;
 
 create table billing_stamp_tax_charge_ins
 (
@@ -119,5 +153,8 @@ ALTER TABLE billing_stamp_tax_charge_ins ADD CONSTRAINT fk_billing_stamp_charge_
 
 ALTER TABLE billing_stamp_tax_charge_ins ADD CONSTRAINT fk_billing_stamp_charge_ins FOREIGN KEY (charge_instance_id) REFERENCES billing_charge_instance (id) ON UPDATE NO ACTION ON DELETE NO ACTION;
 
-alter table billing_invoice add stamp_tax numeric(23,12);
+
+alter table billing_invoice add stamp_tax_amount numeric(23,12);
+
+alter table billing_invoice add billing_account_stamp_tax_id bigint;
 

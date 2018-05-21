@@ -20,25 +20,35 @@ package org.meveo.service.billing.impl;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
 import javax.ejb.Stateless;
 import javax.inject.Inject;
 
 import org.meveo.admin.exception.BusinessException;
+import org.meveo.admin.util.NumberUtil;
+import org.meveo.cache.RatingCacheContainerProvider;
 import org.meveo.model.billing.BillingAccount;
+import org.meveo.model.billing.BillingAccountStampTax;
 import org.meveo.model.billing.RecurringChargeInstance;
 import org.meveo.model.billing.ServiceInstance;
 import org.meveo.model.billing.StampTax;
 import org.meveo.model.billing.StampTaxCalculationTypeEnum;
 import org.meveo.model.billing.StampTaxChargeInstance;
 import org.meveo.model.billing.Subscription;
+import org.meveo.model.billing.SubscriptionStatusEnum;
 import org.meveo.model.billing.UserAccount;
+import org.meveo.model.catalog.PricePlanMatrix;
 import org.meveo.service.base.BusinessService;
 
 @Stateless
 public class StampTaxService  extends BusinessService<StampTax> {
 
-	@Inject BillingAccountService billingAccountService;
+	@Inject 
+	private BillingAccountService billingAccountService;
+	
+    @Inject
+    private RatingCacheContainerProvider ratingCacheContainerProvider;
     
     public StampTax calculateStampTax(Subscription subscription) throws BusinessException
     {
@@ -47,9 +57,9 @@ public class StampTaxService  extends BusinessService<StampTax> {
     	StampTax stampTax = new StampTax();
     	stampTax.setCode("STAMP_TAX");
 		stampTax.setSubscription(subscription);
-		stampTax.setCalculation_date(new Date());
-		stampTax.setCalculation_type(StampTaxCalculationTypeEnum.INFO);
-		stampTax.setTotal_tax_amount(new BigDecimal(0));
+		stampTax.setCalculationDate(new Date());
+		stampTax.setCalculationType(StampTaxCalculationTypeEnum.INFO);
+		stampTax.setTotalTaxAmount(new BigDecimal(0));
 		StampTax attachedStampTax = this.update(stampTax);
 		
     	if (subscription != null && subscription.getEndAgreementDate() != null 
@@ -61,19 +71,19 @@ public class StampTaxService  extends BusinessService<StampTax> {
     		BigDecimal totalTaxAmount = new BigDecimal(0);
 	    	for (ServiceInstance serviceInstance : subscription.getServiceInstances()){
 				for (RecurringChargeInstance recChargeIns : serviceInstance.getRecurringChargeInstances()){
-					StampTaxChargeInstance stampTaxChargeInstance = calculateStampTaxOfRecCharge(attachedStampTax, recChargeIns, subscription.getSubscriptionRenewal().getInitialyActiveFor());
+					StampTaxChargeInstance stampTaxChargeInstance = calculateStampTaxOfRecCharge(subscription,attachedStampTax, recChargeIns, subscription.getSubscriptionRenewal().getInitialyActiveFor());
 					attachedStampTax.addStampTaxChargeInstance(stampTaxChargeInstance);
-					totalTaxAmount = totalTaxAmount.add(stampTaxChargeInstance.getStamp_tax_amount());
+					totalTaxAmount = totalTaxAmount.add(stampTaxChargeInstance.getStampTaxAmount());
 				}
 	    	}
 	    	
-	    	stampTax.setTotal_tax_amount(totalTaxAmount);
-	    	this.update(stampTax);
+	    	attachedStampTax.setTotalTaxAmount(totalTaxAmount);
+	    	this.update(attachedStampTax);
     	}
-    	return stampTax;
+    	return attachedStampTax;
     }
 
-	private StampTaxChargeInstance calculateStampTaxOfRecCharge(StampTax stampTax, RecurringChargeInstance recChargeIns, Integer commitmentMonth) {
+	private StampTaxChargeInstance calculateStampTaxOfRecCharge(Subscription subscription, StampTax stampTax, RecurringChargeInstance recChargeIns, Integer commitmentMonth) {
 		
 		Integer periodStart = recChargeIns.getRecurringChargeTemplate().getDurationTermInMonthStart();
 		Integer periodEnd = recChargeIns.getRecurringChargeTemplate().getDurationTermInMonth();
@@ -90,31 +100,32 @@ public class StampTaxService  extends BusinessService<StampTax> {
 			{
 				stampTaxMonth = commitmentMonth;
 			}
-			stampTaxAmount = recChargeIns.getAmountWithoutTax().multiply(new BigDecimal(stampTaxMonth)).multiply(new BigDecimal(StampTax.stampTaxRate));
+			
+			List<PricePlanMatrix> chargePricePlans = ratingCacheContainerProvider.getPricePlansByChargeCode(recChargeIns.getChargeTemplate().getCode());
+			BigDecimal recChargeAmountWithoutTax = new BigDecimal(0);
+			for (PricePlanMatrix pricePlanMatrix : chargePricePlans){
+       		 if (pricePlanMatrix.getOfferTemplate() != null && pricePlanMatrix.getOfferTemplate().getCode() != null 
+       				 && pricePlanMatrix.getOfferTemplate().getCode().equals(subscription.getOffer().getCode())){
+       			 recChargeAmountWithoutTax = pricePlanMatrix.getAmountWithoutTax();
+       		 }
+			}
+			stampTaxAmount = recChargeAmountWithoutTax.multiply(new BigDecimal(stampTaxMonth)).multiply(new BigDecimal(StampTax.stampTaxRate));
+			stampTaxAmount = NumberUtil.getInChargeUnit(stampTaxAmount, recChargeIns.getRecurringChargeTemplate().getUnitMultiplicator(), 
+						recChargeIns.getRecurringChargeTemplate().getUnitNbDecimal()
+						, recChargeIns.getRecurringChargeTemplate().getRoundingMode());
+			
+			
 		}
 
 		StampTaxChargeInstance stampTaxChargeInstance = new StampTaxChargeInstance();
 		stampTaxChargeInstance.setCode("STAMP_TAX_CHARGE");
 		stampTaxChargeInstance.setStampTax(stampTax);
-		stampTaxChargeInstance.setStamp_tax_amount(stampTaxAmount);
+		stampTaxChargeInstance.setStampTaxAmount(stampTaxAmount);
 		stampTaxChargeInstance.setChargeInstance(recChargeIns);
 		
 		
 		return stampTaxChargeInstance;
 	}
 
- 
-	public BigDecimal getTotalStampTaxOfBillingAccount(BillingAccount billingAccount) throws BusinessException{
-		BigDecimal totalStampTax = new BigDecimal(0);
-		boolean exoneratedFromTaxes = billingAccountService.isExonerated(billingAccount);
-		if (!exoneratedFromTaxes){
-			for (UserAccount userAccount : billingAccount.getUsersAccounts()){
-				for (Subscription subscription : userAccount.getSubscriptions()){
-					totalStampTax = totalStampTax.add(calculateStampTax(subscription).getTotal_tax_amount());
-				}
-			}
-		}
-		return totalStampTax;
-	}
-   
+
 }

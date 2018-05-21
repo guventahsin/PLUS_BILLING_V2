@@ -38,18 +38,18 @@ public class StampTax extends BusinessEntity {
 	
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "calculation_date")
-    private Date calculation_date;
+    private Date calculationDate;
     
     @Enumerated(EnumType.STRING)
     @Column(name = "calculation_type")
-    private StampTaxCalculationTypeEnum calculation_type;
+    private StampTaxCalculationTypeEnum calculationType;
     
     @Column(name = "total_tax_amount", precision = NB_PRECISION, scale = NB_DECIMALS)
-    private BigDecimal total_tax_amount;
+    private BigDecimal totalTaxAmount;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "wallet_operation_id")
-    private WalletOperation walletOperation;
+    @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.ALL})
+    @JoinColumn(name = "billing_account_stamp_tax_id")
+    private BillingAccountStampTax billingAccountStampTax;
     
     @OneToMany(mappedBy = "stampTax", fetch = FetchType.LAZY, cascade = {CascadeType.ALL})
     private List<StampTaxChargeInstance> stampTaxChargeInstances = new ArrayList<>();
@@ -73,36 +73,28 @@ public class StampTax extends BusinessEntity {
 		this.subscription = subscription;
 	}
 
-	public Date getCalculation_date() {
-		return calculation_date;
+	public Date getCalculationDate() {
+		return calculationDate;
 	}
 
-	public void setCalculation_date(Date calculation_date) {
-		this.calculation_date = calculation_date;
+	public void setCalculationDate(Date calculation_date) {
+		this.calculationDate = calculation_date;
 	}
 
-	public StampTaxCalculationTypeEnum getCalculation_type() {
-		return calculation_type;
+	public StampTaxCalculationTypeEnum getCalculationType() {
+		return calculationType;
 	}
 
-	public void setCalculation_type(StampTaxCalculationTypeEnum calculation_type) {
-		this.calculation_type = calculation_type;
+	public void setCalculationType(StampTaxCalculationTypeEnum calculation_type) {
+		this.calculationType = calculation_type;
 	}
 
-	public BigDecimal getTotal_tax_amount() {
-		return total_tax_amount;
+	public BigDecimal getTotalTaxAmount() {
+		return totalTaxAmount;
 	}
 
-	public void setTotal_tax_amount(BigDecimal total_tax_amount) {
-		this.total_tax_amount = total_tax_amount;
-	}
-
-	public WalletOperation getWalletOperation() {
-		return walletOperation;
-	}
-
-	public void setWalletOperation(WalletOperation walletOperation) {
-		this.walletOperation = walletOperation;
+	public void setTotalTaxAmount(BigDecimal totalTaxAmount) {
+		this.totalTaxAmount = totalTaxAmount;
 	}
 
 	public List<StampTaxChargeInstance> getStampTaxChargeInstances() {
@@ -111,6 +103,14 @@ public class StampTax extends BusinessEntity {
 
 	public void setStampTaxChargeInstances(List<StampTaxChargeInstance> stampTaxChargeInstances) {
 		this.stampTaxChargeInstances = stampTaxChargeInstances;
+	}
+
+	public BillingAccountStampTax getBillingAccountStampTax() {
+		return billingAccountStampTax;
+	}
+
+	public void setBillingAccountStampTax(BillingAccountStampTax billingAccountStampTax) {
+		this.billingAccountStampTax = billingAccountStampTax;
 	}
 
 }

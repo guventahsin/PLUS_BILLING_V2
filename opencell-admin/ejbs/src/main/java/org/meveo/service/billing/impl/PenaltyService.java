@@ -64,8 +64,8 @@ public class PenaltyService  extends BusinessService<Penalty> {
 	    	Penalty penalty  = new Penalty();
 	    	penalty.setCode("INFO_CODE");
 	    	penalty.setSubscription(subscription);
-	    	penalty.setCalculation_date(new Date());
-	    	penalty.setCalculation_type(PenaltyCalculationTypeEnum.INFO);
+	    	penalty.setCalculationDate(new Date());
+	    	penalty.setCalculationType(PenaltyCalculationTypeEnum.INFO);
 	    	penalty.setTerminationDate(terminationDate);
 			penalty.setSubscriptionTerminationReason(subscription.getSubscriptionTerminationReason());
 			
@@ -380,8 +380,8 @@ public class PenaltyService  extends BusinessService<Penalty> {
     	Penalty penalty  = new Penalty();
     	penalty.setCode("EXECUTE_CODE");
     	penalty.setSubscription(infoPenalty.getSubscription());
-    	penalty.setCalculation_date(new Date());
-    	penalty.setCalculation_type(PenaltyCalculationTypeEnum.EXECUTE);
+    	penalty.setCalculationDate(new Date());
+    	penalty.setCalculationType(PenaltyCalculationTypeEnum.EXECUTE);
     	penalty.setTerminationDate(infoPenalty.getTerminationDate());
 		penalty.setSubscriptionTerminationReason(infoPenalty.getSubscriptionTerminationReason());
 		penalty.setAppliedWalletOpType(infoPenalty.getAppliedWalletOpType());

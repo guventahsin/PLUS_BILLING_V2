@@ -81,6 +81,7 @@ import org.meveo.commons.utils.QueryBuilder;
 import org.meveo.commons.utils.StringUtils;
 import org.meveo.model.admin.Seller;
 import org.meveo.model.billing.BillingAccount;
+import org.meveo.model.billing.BillingAccountStampTax;
 import org.meveo.model.billing.BillingCycle;
 import org.meveo.model.billing.BillingRun;
 import org.meveo.model.billing.BillingRunStatusEnum;
@@ -169,7 +170,7 @@ public class InvoiceService extends PersistenceService<Invoice> {
     private ServiceSingleton serviceSingleton;
     
     @Inject
-    private StampTaxService stampTaxService;
+    private BillingAccountStampTaxService billingAccountStampTaxService;
 
     /** folder for pdf . */
     private String PDF_DIR_NAME = "pdf";
@@ -963,9 +964,10 @@ public class InvoiceService extends PersistenceService<Invoice> {
             }
         }
         
-        BigDecimal stampTax = stampTaxService.getTotalStampTaxOfBillingAccount(billingAccount);
-        invoice.addAmountTax(stampTax);
-        invoice.setStampTax(stampTax);
+        BillingAccountStampTax billingAccountStampTax = billingAccountStampTaxService.getTotalStampTaxOfBillingAccount(billingAccount);
+        invoice.addAmountTax(billingAccountStampTax.getStampTaxAmount());
+        invoice.setStampTaxAmount(billingAccountStampTax.getStampTaxAmount());
+        invoice.setBillingAccountStampTax(billingAccountStampTax);
 
         if (invoice.getAmountWithoutTax() != null) {
             invoice.setAmountWithTax(invoice.getAmountWithoutTax().add(invoice.getAmountTax() == null ? BigDecimal.ZERO : invoice.getAmountTax()));

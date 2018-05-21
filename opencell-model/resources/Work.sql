@@ -168,3 +168,11 @@ select * from billing_invoice_sub_cat where id = -2
 select * from billing_tax
 
 select * from billing_invoice order by id desc
+
+select * from billing_stamp_tax
+
+select * from billing_stamp_tax_charge_ins
+
+select * from billing_account_stamp_tax
+
+select * from cat_price_plan_matrix

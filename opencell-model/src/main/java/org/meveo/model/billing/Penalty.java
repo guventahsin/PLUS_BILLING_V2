@@ -36,7 +36,7 @@ public class Penalty extends BusinessEntity {
 	
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "calculation_date")
-    private Date calculation_date;
+    private Date calculationDate;
     
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "termination_date")
@@ -48,7 +48,7 @@ public class Penalty extends BusinessEntity {
     
     @Enumerated(EnumType.STRING)
     @Column(name = "calculation_type")
-    private PenaltyCalculationTypeEnum calculation_type;
+    private PenaltyCalculationTypeEnum calculationType;
     
     @Column(name = "amount_with_tax", precision = NB_PRECISION, scale = NB_DECIMALS)
     private BigDecimal penaltyAmountWitTax;
@@ -92,12 +92,12 @@ public class Penalty extends BusinessEntity {
 		this.subscription = subscription;
 	}
 
-	public Date getCalculation_date() {
-		return calculation_date;
+	public Date getCalculationDate() {
+		return calculationDate;
 	}
 
-	public void setCalculation_date(Date calculation_date) {
-		this.calculation_date = calculation_date;
+	public void setCalculationDate(Date calculationDate) {
+		this.calculationDate = calculationDate;
 	}
 
 	public Date getTerminationDate() {
@@ -116,12 +116,12 @@ public class Penalty extends BusinessEntity {
 		this.subscriptionTerminationReason = subscriptionTerminationReason;
 	}
 
-	public PenaltyCalculationTypeEnum getCalculation_type() {
-		return calculation_type;
+	public PenaltyCalculationTypeEnum getCalculationType() {
+		return calculationType;
 	}
 
-	public void setCalculation_type(PenaltyCalculationTypeEnum calculation_type) {
-		this.calculation_type = calculation_type;
+	public void setCalculationType(PenaltyCalculationTypeEnum calculationType) {
+		this.calculationType = calculationType;
 	}
 
 	public BigDecimal getPenaltyAmountWitTax() {

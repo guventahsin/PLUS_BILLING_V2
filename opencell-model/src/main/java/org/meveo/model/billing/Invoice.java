@@ -128,9 +128,13 @@ public class Invoice extends EnableEntity implements ICustomFieldEntity {
     @Column(name = "net_to_pay", precision = NB_PRECISION, scale = NB_DECIMALS)
     private BigDecimal netToPay;
     
-    @Column(name = "stamp_tax", precision = NB_PRECISION, scale = NB_DECIMALS)
-    private BigDecimal stampTax;
-
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "billing_account_stamp_tax_id")
+    private BillingAccountStampTax billingAccountStampTax;
+    
+    @Column(name = "stamp_tax_amount", precision = NB_PRECISION, scale = NB_DECIMALS)
+    private BigDecimal stampTaxAmount;
+    
 
     @Column(name = "payment_method")
     @Enumerated(EnumType.STRING)
@@ -669,11 +673,20 @@ public class Invoice extends EnableEntity implements ICustomFieldEntity {
         return xmlFilename;
     }
 
-	public BigDecimal getStampTax() {
-		return stampTax;
+	public BigDecimal getStampTaxAmount() {
+		return stampTaxAmount;
 	}
 
-	public void setStampTax(BigDecimal stampTax) {
-		this.stampTax = stampTax;
+	public void setStampTaxAmount(BigDecimal stampTaxAmount) {
+		this.stampTaxAmount = stampTaxAmount;
 	}
+
+	public BillingAccountStampTax getBillingAccountStampTax() {
+		return billingAccountStampTax;
+	}
+
+	public void setBillingAccountStampTax(BillingAccountStampTax billingAccountStampTax) {
+		this.billingAccountStampTax = billingAccountStampTax;
+	}
+
 }

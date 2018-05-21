@@ -45,6 +45,7 @@ import org.meveo.admin.util.ResourceBundle;
 import org.meveo.commons.utils.QueryBuilder;
 import org.meveo.commons.utils.StringUtils;
 import org.meveo.model.billing.BillingAccount;
+import org.meveo.model.billing.BillingAccountStampTax;
 import org.meveo.model.billing.BillingRun;
 import org.meveo.model.billing.BillingRunStatusEnum;
 import org.meveo.model.billing.CategoryInvoiceAgregate;
@@ -56,7 +57,6 @@ import org.meveo.model.billing.InvoiceSubCategory;
 import org.meveo.model.billing.InvoiceSubcategoryCountry;
 import org.meveo.model.billing.RatedTransaction;
 import org.meveo.model.billing.RatedTransactionStatusEnum;
-import org.meveo.model.billing.StampTax;
 import org.meveo.model.billing.SubCategoryInvoiceAgregate;
 import org.meveo.model.billing.Subscription;
 import org.meveo.model.billing.Tax;
@@ -106,7 +106,7 @@ public class RatedTransactionService extends PersistenceService<RatedTransaction
     private ResourceBundle resourceMessages;
     
     @Inject
-    private StampTaxService stampTaxService;
+    private BillingAccountStampTaxService billingAccountStampTaxService;
 
     /** constants.*/
     private final BigDecimal HUNDRED = new BigDecimal("100");
@@ -609,9 +609,10 @@ public class RatedTransactionService extends PersistenceService<RatedTransaction
                 invoice.addAmountTax(taxInvoiceAgregate.getAmountTax().setScale(rounding, RoundingMode.HALF_UP));
             }
             
-            BigDecimal stampTax = stampTaxService.getTotalStampTaxOfBillingAccount(billingAccount);
-            invoice.addAmountTax(stampTax);
-            invoice.setStampTax(stampTax);
+            BillingAccountStampTax billingAccountStampTax = billingAccountStampTaxService.getTotalStampTaxOfBillingAccount(billingAccount);
+            invoice.addAmountTax(billingAccountStampTax.getStampTaxAmount());
+            invoice.setStampTaxAmount(billingAccountStampTax.getStampTaxAmount());
+            invoice.setBillingAccountStampTax(billingAccountStampTax);
             
             if (invoice.getAmountWithoutTax() != null) {
                 invoice.setAmountWithTax(invoice.getAmountWithoutTax().add(invoice.getAmountTax() == null ? BigDecimal.ZERO : invoice.getAmountTax()));

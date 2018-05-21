@@ -1616,7 +1616,7 @@ public class XMLInvoiceCreator extends PersistenceService<Invoice> {
 	    tax.appendChild(percent);
 	
 	    Element taxAmount = doc.createElement("amount");
-	    Text amountTxt = doc.createTextNode(round(invoice.getStampTax(), rounding));
+	    Text amountTxt = doc.createTextNode(round(invoice.getStampTaxAmount(), rounding));
 	    taxAmount.appendChild(amountTxt);
 	    tax.appendChild(taxAmount);
 	

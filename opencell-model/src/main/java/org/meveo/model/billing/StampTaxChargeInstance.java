@@ -30,7 +30,7 @@ public class StampTaxChargeInstance extends BusinessEntity {
     private ChargeInstance chargeInstance;
     
     @Column(name = "stamp_tax_amount", precision = NB_PRECISION, scale = NB_DECIMALS)
-    private BigDecimal stamp_tax_amount;
+    private BigDecimal stampTaxAmount;
 
 	public StampTax getStampTax() {
 		return stampTax;
@@ -48,12 +48,12 @@ public class StampTaxChargeInstance extends BusinessEntity {
 		this.chargeInstance = chargeInstance;
 	}
 
-	public BigDecimal getStamp_tax_amount() {
-		return stamp_tax_amount;
+	public BigDecimal getStampTaxAmount() {
+		return stampTaxAmount;
 	}
 
-	public void setStamp_tax_amount(BigDecimal stamp_tax_amount) {
-		this.stamp_tax_amount = stamp_tax_amount;
+	public void setStampTaxAmount(BigDecimal stampTaxAmount) {
+		this.stampTaxAmount = stampTaxAmount;
 	}
     
 }
