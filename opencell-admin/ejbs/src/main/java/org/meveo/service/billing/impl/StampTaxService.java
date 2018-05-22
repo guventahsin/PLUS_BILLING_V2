@@ -28,16 +28,13 @@ import javax.inject.Inject;
 import org.meveo.admin.exception.BusinessException;
 import org.meveo.admin.util.NumberUtil;
 import org.meveo.cache.RatingCacheContainerProvider;
-import org.meveo.model.billing.BillingAccount;
-import org.meveo.model.billing.BillingAccountStampTax;
+import org.meveo.commons.utils.QueryBuilder;
 import org.meveo.model.billing.RecurringChargeInstance;
 import org.meveo.model.billing.ServiceInstance;
 import org.meveo.model.billing.StampTax;
 import org.meveo.model.billing.StampTaxCalculationTypeEnum;
 import org.meveo.model.billing.StampTaxChargeInstance;
 import org.meveo.model.billing.Subscription;
-import org.meveo.model.billing.SubscriptionStatusEnum;
-import org.meveo.model.billing.UserAccount;
 import org.meveo.model.catalog.PricePlanMatrix;
 import org.meveo.service.base.BusinessService;
 
@@ -50,10 +47,33 @@ public class StampTaxService  extends BusinessService<StampTax> {
     @Inject
     private RatingCacheContainerProvider ratingCacheContainerProvider;
     
+    
+    public StampTax findAppliedStampTaxFromSubscription(Subscription subscription) {
+        try {
+            QueryBuilder qb = new QueryBuilder(StampTax.class, "st", null);
+            qb.addCriterionEntity("st.subscription", subscription);
+            qb.addCriterion("st.billingAccountStampTax", "!=", null, false);
+            return (StampTax) qb.getQuery(getEntityManager()).getResultList();
+        } catch (Exception ex) {
+            log.error("failed to findAppliedStampTaxFromSubscription", ex);
+        }
+
+        return null;
+    }
+    
     public StampTax calculateStampTax(Subscription subscription) throws BusinessException
     {
+    	//already calculated
+    	if (findAppliedStampTaxFromSubscription(subscription) != null){
+        	StampTax stampTax = new StampTax();
+        	stampTax.setCode("STAMP_TAX");
+    		stampTax.setSubscription(subscription);
+    		stampTax.setCalculationDate(new Date());
+    		stampTax.setCalculationType(StampTaxCalculationTypeEnum.INFO);
+    		stampTax.setTotalTaxAmount(new BigDecimal(0));
+    		return stampTax;
+    	}
     	
-    	//TODO: daha once hesaplanmissa tekrar hesaplama
     	StampTax stampTax = new StampTax();
     	stampTax.setCode("STAMP_TAX");
 		stampTax.setSubscription(subscription);
