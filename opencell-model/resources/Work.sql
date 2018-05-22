@@ -23,6 +23,14 @@ and a.charge_instance_id = b.id
 and b.user_account_id = 8
 order by created desc
 
+
+select a.created, a.code, a.input_quantity, a.amount_without_tax, a.amount_tax, a.amount_with_tax, a.start_date, a.end_date, a.charge_instance_id  from billing_wallet_operation a
+, billing_charge_instance b
+where a.status = 'BILLED' 
+and a.charge_instance_id = b.id
+and b.user_account_id = 8
+order by created desc
+
 select a.created, a.code, a.input_quantity, a.amount_without_tax, a.amount_tax, a.amount_with_tax, a.start_date, a.end_date, a.charge_instance_id  from billing_wallet_operation a
 , billing_charge_instance b
 where a.status = 'PENALTY' 
@@ -176,3 +184,5 @@ select * from billing_stamp_tax_charge_ins
 select * from billing_account_stamp_tax
 
 select * from cat_price_plan_matrix
+
+select * from billing_wallet_operation order by created desc

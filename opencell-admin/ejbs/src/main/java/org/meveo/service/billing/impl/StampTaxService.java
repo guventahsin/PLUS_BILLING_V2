@@ -90,7 +90,11 @@ public class StampTaxService  extends BusinessService<StampTax> {
 		BigDecimal stampTaxAmount = new BigDecimal(0);
 		int stampTaxMonth = 0;
 		
-		if (periodStart != null)
+		if (periodStart == null && periodEnd == null)
+		{
+			stampTaxMonth = commitmentMonth;
+		}
+		else if (periodStart != null)
 		{
 			if (periodEnd == null){
 				periodEnd = commitmentMonth;
@@ -100,6 +104,9 @@ public class StampTaxService  extends BusinessService<StampTax> {
 			{
 				stampTaxMonth = commitmentMonth;
 			}
+		}
+		
+		if (stampTaxMonth > 0){
 			
 			List<PricePlanMatrix> chargePricePlans = ratingCacheContainerProvider.getPricePlansByChargeCode(recChargeIns.getChargeTemplate().getCode());
 			BigDecimal recChargeAmountWithoutTax = new BigDecimal(0);
@@ -113,8 +120,6 @@ public class StampTaxService  extends BusinessService<StampTax> {
 			stampTaxAmount = NumberUtil.getInChargeUnit(stampTaxAmount, recChargeIns.getRecurringChargeTemplate().getUnitMultiplicator(), 
 						recChargeIns.getRecurringChargeTemplate().getUnitNbDecimal()
 						, recChargeIns.getRecurringChargeTemplate().getRoundingMode());
-			
-			
 		}
 
 		StampTaxChargeInstance stampTaxChargeInstance = new StampTaxChargeInstance();

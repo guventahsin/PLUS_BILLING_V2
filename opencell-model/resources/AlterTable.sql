@@ -85,16 +85,15 @@ create sequence billing_stamptax_chargeins_seq;
 
 drop table billing_stamp_tax_charge_ins;
 
-drop table billing_account_stamp_tax;
-
 drop table billing_stamp_tax;
 
+drop table billing_account_stamp_tax;
 
 create table billing_account_stamp_tax
 (
 	id bigint not null,
 	billing_account_id bigint not null,
-	stamp_tax_amount numeric(23,12) not null,
+	stamp_tax_amount numeric(23,12),
 	description varchar(255),
 	version INT, 
 	disabled INT DEFAULT 0 NOT NULL, 
